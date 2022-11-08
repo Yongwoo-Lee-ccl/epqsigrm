@@ -44,7 +44,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	//import public key
 	import_pk(pk, H_pub);
 	
-	vector_mtx_product(syndrome_by_e, H_pub, errorMtx);
+	vectorMatrixProd(syndrome_by_e, H_pub, errorMtx);
 
 	for(i=0; i<CODE_N-CODE_K; ++i)
 		if(getElement(syndrome_by_hash, 0, i) != getElement(syndrome_by_e, 0, i))

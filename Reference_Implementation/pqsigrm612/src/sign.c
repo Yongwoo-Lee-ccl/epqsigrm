@@ -15,7 +15,7 @@ matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mt
 {
 	hashMsg(synd_mtx->elem, m, mlen, sign_i);
 	
-	vector_mtx_product(scrambled_synd_mtx, Sinv, synd_mtx);
+	vectorMatrixProd(scrambled_synd_mtx, Sinv, synd_mtx);
 	return scrambled_synd_mtx;
 }
 

@@ -19,6 +19,7 @@ void mtxcpy(matrix* dest, const int r1, const int c1,const int r2, const int c2,
 		for(int j = 0; j < c2 - c1; j++)
 			setElement(dest, r1 + i, c1+j, getElement(src, r3 + i, c3 + j));
 }
+
 void deleteMatrix(matrix* A)
 {
   free(A->elem);
@@ -41,7 +42,7 @@ int product(matrix * mtx1, matrix * mtx2, matrix * prod) {
 }
 
 //assume vector is transposed
-void vector_mtx_product(matrix *dest, matrix* m, matrix *vec){
+void vectorMatrixProd(matrix *dest, matrix* m, matrix *vec){
 	unsigned char bit = 0;
 	unsigned char offset;
 	int row, col;

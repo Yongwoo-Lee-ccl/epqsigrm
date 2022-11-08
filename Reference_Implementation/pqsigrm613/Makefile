@@ -9,6 +9,9 @@ OBJS = ${CFILES}
 sign: ${OBJS} ./PQCgenKAT_sign.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^  $(LIBFLAGS)
 
+runtime: ${OBJS} ./runtime.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^  $(LIBFLAGS)
+
 %.o : %.c
 	$(CC) $(CFLAGS) -o $@ -c $< 
 
@@ -17,4 +20,4 @@ api.o : api.h
 
 clean:
 	rm -f *.o
-	rm -f sign
+	rm -f sign runtime

@@ -52,7 +52,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	uint16_t *s_lead = (uint16_t*)malloc(sizeof(uint16_t)*(CODE_N-CODE_K));
 	uint16_t *s_diff = (uint16_t*)malloc(sizeof(uint16_t)*CODE_K);
 
-
 	// generate secret parital permutations
 	partial_permutation_gen(part_perm1);
 	partial_permutation_gen(part_perm2);
@@ -60,11 +59,9 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	// Generate a partially permute generator matrix G_M
 	rm_gen_mod(G_M, part_perm1, part_perm2);
 	
-	
 	// Parity check matrix of the modified RM code
 	dual(G_M, H_M, 0, 0);
 	rref(H_M); getPivot(H_M, s_lead, s_diff);
-
 
 	// Generate a Scrambling matrix and its inverse. 
 	do{

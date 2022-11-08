@@ -41,7 +41,7 @@ int product(matrix * mtx1, matrix * mtx2, matrix * prod) {
 }
 
 //assume vector is transposed
-void vector_mtx_product(matrix *dest, matrix* m, matrix *vec){
+void vectorMatrixProd(matrix *dest, matrix* m, matrix *vec){
 	unsigned char bit = 0;
 	unsigned char offset;
 	int row, col;
