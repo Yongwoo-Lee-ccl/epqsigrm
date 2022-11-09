@@ -1,6 +1,6 @@
 #include "matrix.h"
 
-matrix* newMatrix (int rows, int cols)
+matrix* new_matrix (int rows, int cols)
 {
   matrix* A;
 
@@ -14,19 +14,19 @@ matrix* newMatrix (int rows, int cols)
   return A;
 }
 
-void mtxcpy(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
+void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
 	for(int i = 0; i < r2 - r1; i++)
 		for(int j = 0; j < c2 - c1; j++)
 			setElement(dest, r1 + i, c1+j, getElement(src, r3 + i, c3 + j));
 }
 
-void deleteMatrix(matrix* A)
+void delete_matrix(matrix* A)
 {
   free(A->elem);
   free(A);
 }
 
-int product(matrix * mtx1, matrix * mtx2, matrix * prod) {
+int mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
 	int row, col, k;
 	int val;
 	if(mtx1->cols != mtx2->rows) 	return -1;
@@ -42,7 +42,7 @@ int product(matrix * mtx1, matrix * mtx2, matrix * prod) {
 }
 
 //assume vector is transposed
-void vectorMatrixProd(matrix *dest, matrix* m, matrix *vec){
+void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 	unsigned char bit = 0;
 	unsigned char offset;
 	int row, col;
@@ -63,7 +63,7 @@ void vectorMatrixProd(matrix *dest, matrix* m, matrix *vec){
 	}
 }
 
-void rowInterchanging(matrix* A, int row_idx1, int row_idx2){
+void row_interchange(matrix* A, int row_idx1, int row_idx2){
 	int col_idx;
 	unsigned char temp;
 	for(col_idx=0; col_idx<A->rwdcnt; ++col_idx){
@@ -73,7 +73,7 @@ void rowInterchanging(matrix* A, int row_idx1, int row_idx2){
 	}
 }
 
-void rowAddition(matrix* A, int dest_row_idx, int adding_row_idx){
+void row_add(matrix* A, int dest_row_idx, int adding_row_idx){
 	int col_idx;
 	for(col_idx=0; col_idx<A->rwdcnt; ++col_idx){
 		A->elem[dest_row_idx * A->rwdcnt + col_idx] 
@@ -103,7 +103,7 @@ matrix * rref(matrix* A)
 		// interchange between:
 		// <succ_row_idx> th row <-> <row_idx> th row
 		if(row_idx != succ_row_idx){
-			rowInterchanging(A, succ_row_idx, row_idx);
+			row_interchange(A, succ_row_idx, row_idx);
 		}
 				
 		// By adding <succ_row_idx> th row in the other rows 
@@ -113,7 +113,7 @@ matrix * rref(matrix* A)
 			if(i == succ_row_idx) continue;
 
 			if(getElement(A, i, col_idx) == 1){
-				rowAddition(A, i, succ_row_idx);
+				row_add(A, i, succ_row_idx);
 			}
 		}
 		row_idx = ++succ_row_idx;
@@ -127,8 +127,8 @@ int inverse(matrix *mtx, matrix *mtxInv){
 	if(mtxInv->rows != mtxInv->cols) 	return INV_FAIL;
 	if(mtx->rows != mtxInv->rows) 		return INV_FAIL;
 
-	matrix* temp = newMatrix(mtx->rows, mtx->cols);
-	matrixcpy(temp, mtx);
+	matrix* temp = new_matrix(mtx->rows, mtx->cols);
+	copy_matrix(temp, mtx);
 
 	int r, c;
 	for(r = 0; r< mtxInv->alloc_size;++r){
@@ -146,8 +146,8 @@ int inverse(matrix *mtx, matrix *mtxInv){
 			for (r = c+1; r < mtx->rows; ++r)
 			{
 				if(getElement(temp, r, c) != 0){
-					rowInterchanging(temp, r, c);
-					rowInterchanging(mtxInv, r, c);
+					row_interchange(temp, r, c);
+					row_interchange(mtxInv, r, c);
 					break;
 				}
 			}
@@ -158,19 +158,19 @@ int inverse(matrix *mtx, matrix *mtxInv){
 		for(r = 0; r < temp->rows; r++){
 			if(r == c) continue;
 			if(getElement(temp, r, c) != 0){
-				rowAddition(temp, r, c);
-				rowAddition(mtxInv, r, c);
+				row_add(temp, r, c);
+				row_add(mtxInv, r, c);
 			}
 		}
 	}
-	deleteMatrix(temp);
+	delete_matrix(temp);
 	return INV_SUCCESS;
 }
 
-int isNonsingular(matrix *mtx){
+int is_nonsingular(matrix *mtx){
 
-	matrix* temp = newMatrix(mtx->rows, mtx->cols);
-	matrixcpy(temp, mtx);
+	matrix* temp = new_matrix(mtx->rows, mtx->cols);
+	copy_matrix(temp, mtx);
 
 	int r, c;
 	unsigned char bit_one =	0x80;
@@ -182,7 +182,7 @@ int isNonsingular(matrix *mtx){
 			for (r = c+1; r < mtx->rows; ++r)
 			{
 				if(getElement(temp, r, c) != 0){
-					rowInterchanging(temp, r, c);
+					row_interchange(temp, r, c);
 					break;
 				}
 			}
@@ -193,16 +193,16 @@ int isNonsingular(matrix *mtx){
 		for(r = 0; r < temp->rows; r++){
 			if(r == c) continue;
 			if(getElement(temp, r, c) != 0){
-				rowAddition(temp, r, c);
+				row_add(temp, r, c);
 			}
 		}
 	}
-	deleteMatrix(temp);
+	delete_matrix(temp);
 	return INV_SUCCESS;
 }
 
 
-matrix* matrixcpy(matrix* dest, matrix* src){
+matrix* copy_matrix(matrix* dest, matrix* src){
 	if(dest->rows != src->rows || dest->cols!=src->cols) return MATRIX_NULL;
 	
 	memcpy(dest->elem, src->elem, dest->alloc_size);
@@ -220,12 +220,12 @@ matrix* transpose(matrix *dest, matrix *src){
 }
 
 // Exports a matrix into unsigned char destination.
-int exportMatrix(unsigned char* dest, matrix* src_mtx){
+int export_matrix(unsigned char* dest, matrix* src_mtx){
 	memcpy(dest, src_mtx->elem, src_mtx->alloc_size);
 	return src_mtx->alloc_size;
 }
 
-matrix* importMatrix(matrix* dest_mtx, const unsigned char* src){
+matrix* import_matrix(matrix* dest_mtx, const unsigned char* src){
 	memcpy(dest_mtx->elem, src, dest_mtx->alloc_size);
 
 	return dest_mtx;
@@ -241,7 +241,7 @@ int add(matrix *m1, matrix *m2, matrix *res){
 	return 0;
 }
 
-void getPivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff){
+void get_pivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff){
 	int row=0, col=0;
 	int lead_idx=0, diff_idx=0;
 	while((col < mtx->cols) && (row < mtx->rows) && (lead_idx < mtx->rows) && (diff_idx < (mtx->cols - mtx->rows))){
@@ -268,7 +268,7 @@ void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff){
 		lead_diff = (uint16_t*)malloc(sizeof(uint16_t)*(G->cols - G->rows));	
 		flg = 1;
 	}
-	getPivot(G, lead, lead_diff);
+	get_pivot(G, lead, lead_diff);
 	// Fill not-identity part (P')
 	for ( row = 0; row < H_sys->rows; row++) 
 		for ( col = 0; col < G->rows; col++) 

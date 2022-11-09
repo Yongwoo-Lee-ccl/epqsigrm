@@ -25,26 +25,26 @@ typedef struct {
    unsigned char *elem;//row index.
 } matrix;
 
-matrix* newMatrix(int rows, int cols) ;
-void deleteMatrix(matrix * mtx) ;
+matrix* new_matrix(int rows, int cols) ;
+void delete_matrix(matrix * mtx) ;
 
 matrix* rref(matrix* mtx);
 matrix* transpose(matrix *dest, matrix *src);
 int inverse(matrix *mtx, matrix *mtxInv);
-int isNonsingular(matrix *mtx);
+int is_nonsingular(matrix *mtx);
 
-void getPivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff);
+void get_pivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff);
 
-matrix* matrixcpy(matrix* dest, matrix* src);
+matrix* copy_matrix(matrix* dest, matrix* src);
 
-int product(matrix * mtx1, matrix * mtx2, matrix * prod); 
-void vectorMatrixProd(matrix *dest, matrix* m, matrix *vec);
+int mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod); 
+void vec_mat_prod(matrix *dest, matrix* m, matrix *vec);
 int add(matrix *m1, matrix *m2, matrix *res);
 
-int exportMatrix(unsigned char* dest, matrix* mtx);
-matrix* importMatrix(matrix* dest_mtx, const unsigned char* src);
+int export_matrix(unsigned char* dest, matrix* mtx);
+matrix* import_matrix(matrix* dest_mtx, const unsigned char* src);
 
 void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff);
-void rowInterchanging(matrix* mtx, int row_idx1, int row_idx2);
-void mtxcpy(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3);
+void row_interchange(matrix* mtx, int row_idx1, int row_idx2);
+void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3);
 #endif

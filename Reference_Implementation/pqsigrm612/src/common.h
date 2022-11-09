@@ -12,10 +12,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-unsigned char* hashMsg(unsigned char *s, const unsigned char *m, 
+unsigned char* hash_message(unsigned char *s, const unsigned char *m, 
 	unsigned long long mlen, unsigned long long i);
 
-int hammingWgt(matrix* e);
+int hamming_weight(matrix* e);
 
 void swap(uint16_t *Q, const int i, const int j);
 

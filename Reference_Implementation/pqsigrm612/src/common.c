@@ -1,7 +1,7 @@
 // common.c for pqsigRM
 #include "common.h"
 
-unsigned char* hashMsg(unsigned char *s, const unsigned char *m, 
+unsigned char* hash_message(unsigned char *s, const unsigned char *m, 
 	unsigned long long mlen, unsigned long long sign_i){
 	// Hash the given message
 	// syndrome s = h(h(M)|i) | (h(h(M)|i)) | ...
@@ -20,7 +20,7 @@ unsigned char* hashMsg(unsigned char *s, const unsigned char *m,
 	return s;
 }
 
-int hammingWgt(matrix* error){
+int hamming_weight(matrix* error){
 	int wgt=0;
 	int i=0;
 	for(i=0; i < error->cols; i++)
@@ -81,13 +81,13 @@ uint16_t random16(uint16_t n){
 void col_permute(matrix* m, const int rf, const int rr, const int cf, 
 	const int cr, uint16_t* Q)
 {
-	matrix* mcpy = newMatrix(m->rows, m->cols); 
+	matrix* mcpy = new_matrix(m->rows, m->cols); 
 	memcpy(mcpy->elem, m->elem, m->alloc_size);
 	int r, c;
 	for(c = cf; c < cr; c++)
 		for(r = rf; r < rr; r++)
 			setElement(m, r, c, getElement(mcpy, r, cf + Q[c-cf]));
-	deleteMatrix(mcpy);
+	delete_matrix(mcpy);
 }
 
 

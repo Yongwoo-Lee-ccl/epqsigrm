@@ -13,9 +13,9 @@ int wgt(float *yc, float *yr)
 matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mtx
 	, const unsigned char *m, unsigned long long mlen, unsigned long long sign_i)
 {
-	hashMsg(synd_mtx->elem, m, mlen, sign_i);
+	hash_message(synd_mtx->elem, m, mlen, sign_i);
 
-	vectorMatrixProd(scrambled_synd_mtx, Sinv, synd_mtx);
+	vec_mat_prod(scrambled_synd_mtx, Sinv, synd_mtx);
 	return scrambled_synd_mtx;
 }
 
@@ -24,7 +24,7 @@ void import_sk(const unsigned char *sk, matrix *Sinv
 		, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2
 		, uint16_t **s_lead)
 {
-	importMatrix(Sinv, sk);
+	import_matrix(Sinv, sk);
 	*Q 			= (uint16_t*)(sk+Sinv->alloc_size);
 	*part_perm1 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N);
 	*part_perm2 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
@@ -50,7 +50,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	const unsigned char *sk){
 
 	// read secret key(bit stream) into appropriate type.
-	matrix* Sinv = newMatrix(CODE_N-CODE_K, CODE_N-CODE_K);
+	matrix* Sinv = new_matrix(CODE_N-CODE_K, CODE_N-CODE_K);
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
 	import_sk(sk, Sinv, &Q, &part_perm1, &part_perm2, &s_lead);
 	// Do signing, decode until the a error vector wt <= w is achieved
@@ -59,8 +59,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	unsigned long long sign_i;
 
 	// unsigned char sign[CODE_N];
-	matrix *synd_mtx= newMatrix(1, CODE_N - CODE_K);
-	matrix *scrambled_synd_mtx = newMatrix(1, CODE_N - CODE_K);
+	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
+	matrix *scrambled_synd_mtx = new_matrix(1, CODE_N - CODE_K);
 
 	float *yc = (float*)malloc(sizeof(float)*CODE_N);
 	float *yr = (float*)malloc(sizeof(float)*CODE_N);
@@ -81,7 +81,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
 	}
 	// compute Qinv*e'
-	matrix *sign = newMatrix(1, CODE_N);
+	matrix *sign = new_matrix(1, CODE_N);
 	for(i=0; i<CODE_N; i++){
 		setElement(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
@@ -98,8 +98,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 
 	*smlen = sizeof(unsigned long long) + mlen + sign->alloc_size + sizeof(unsigned long long);
 	
-	deleteMatrix(Sinv);
-	deleteMatrix(synd_mtx);	deleteMatrix(scrambled_synd_mtx);
+	delete_matrix(Sinv);
+	delete_matrix(synd_mtx);	delete_matrix(scrambled_synd_mtx);
 	free(yr); free(yc);
 	return 0;	
 }
