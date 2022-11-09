@@ -61,8 +61,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	// Generate a partially permute generator matrix G_M
 	rm_gen_mod(G_M, part_perm1, part_perm2);
-	
-	return 0;
+
 	// Parity check matrix of the modified RM code
 	dual(G_M, H_M, 0, 0);
 	rref(H_M); 

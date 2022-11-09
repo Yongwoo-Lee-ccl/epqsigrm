@@ -47,7 +47,7 @@ matrix* import_matrix(matrix* dest_mtx, const unsigned char* src){
 	return dest_mtx;
 }
 
-matrix * rref(matrix* A)
+matrix* rref(matrix* A)
 {
 	// Assume column is longer than row
 	uint32_t succ_row_idx = 0;
@@ -250,21 +250,22 @@ int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
 
 void dual(matrix* G, matrix* H_sys, uint32_t *lead, uint32_t *lead_diff){
 	uint8_t flg = 0; 
-	rref(G);
 
 	if(lead == 0 || lead_diff == 0){
 		lead = (uint32_t*)malloc(sizeof(uint32_t)*G->nrows);
 		lead_diff = (uint32_t*)malloc(sizeof(uint32_t)*(G->ncols - G->nrows));	
 		flg = 1;
 	}
+	
 
+	rref(G);
 	get_pivot(G, lead, lead_diff);
 
 	// Fill not-identity part (P')
 	for (uint32_t row = 0; row < H_sys->nrows; row++) 
 		for (uint32_t col = 0; col < G->nrows; col++) 
 			set_element(H_sys, row, lead[col], get_element(G, col, lead_diff[row]));
-
+	
 	for (uint32_t row = 0; row < H_sys->nrows; row++) 
 			set_element(H_sys, row, lead_diff[row], 1);
 	
