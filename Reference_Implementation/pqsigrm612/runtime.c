@@ -94,9 +94,6 @@ main()
         free(m1);
         free(sm);
     }
-    
-    fclose(fp_req);
-    fclose(fp_rsp);
 
     return RUN_SUCCESS;
 }

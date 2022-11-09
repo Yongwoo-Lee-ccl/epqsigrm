@@ -231,7 +231,7 @@ matrix* import_matrix(matrix* dest_mtx, const unsigned char* src){
 	return dest_mtx;
 }
 
-int add(matrix *m1, matrix *m2, matrix *res){
+int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
 	if((m1->nrows != m2->nrows) || (m1->ncols != m2->ncols))
 		return -1;
 	

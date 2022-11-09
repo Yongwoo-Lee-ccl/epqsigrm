@@ -194,36 +194,6 @@ void get_pivot(matrix* mtx, uint32_t *lead, uint32_t *lead_diff){
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
-	for(int i = 0; i < r2 - r1; i++)
-		for(int j = 0; j < c2 - c1; j++)
-			set_element(dest, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
-}
-
-
 void mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
 	uint32_t row, col, k;
 	uint32_t val;
@@ -268,26 +238,7 @@ void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 	}
 }
 
-void row_interchange(matrix* A, uint32_t row_idx1, uint32_t row_idx2){
-	uint32_t col_idx;
-	unsigned char temp;
-	for(col_idx=0; col_idx<A->words_in_row; ++col_idx){
-		temp 	 								= A->elem[row_idx1 * A->words_in_row + col_idx];
-		A->elem[row_idx1 * A->words_in_row + col_idx] = A->elem[row_idx2 * A->words_in_row + col_idx];
-		A->elem[row_idx2 * A->words_in_row + col_idx] = temp;
-	}
-}
-
-
-
-
-
-
-
-
-
-
-int add(matrix *m1, matrix *m2, matrix *res){
+int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
 	if((m1->nrows != m2->nrows) || (m1->ncols != m2->ncols))
 		return -1;
 	
@@ -297,27 +248,44 @@ int add(matrix *m1, matrix *m2, matrix *res){
 	return 0;
 }
 
-
-
-void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff){
-	int row, col, flg = 0; 
+void dual(matrix* G, matrix* H_sys, uint32_t *lead, uint32_t *lead_diff){
+	uint8_t flg = 0; 
 	rref(G);
+
 	if(lead == 0 || lead_diff == 0){
-		lead = (uint16_t*)malloc(sizeof(uint16_t)*G->nrows);
-		lead_diff = (uint16_t*)malloc(sizeof(uint16_t)*(G->ncols - G->nrows));	
+		lead = (uint32_t*)malloc(sizeof(uint32_t)*G->nrows);
+		lead_diff = (uint32_t*)malloc(sizeof(uint32_t)*(G->ncols - G->nrows));	
 		flg = 1;
 	}
+
 	get_pivot(G, lead, lead_diff);
+
 	// Fill not-identity part (P')
-	for ( row = 0; row < H_sys->nrows; row++) 
-		for ( col = 0; col < G->nrows; col++) 
+	for (uint32_t row = 0; row < H_sys->nrows; row++) 
+		for (uint32_t col = 0; col < G->nrows; col++) 
 			set_element(H_sys, row, lead[col], get_element(G, col, lead_diff[row]));
 
-	for ( row = 0; row < H_sys->nrows; row++) 
+	for (uint32_t row = 0; row < H_sys->nrows; row++) 
 			set_element(H_sys, row, lead_diff[row], 1);
 	
-	if(flg){
+	if(flg == 1){
 		free(lead);
 		free(lead_diff);
 	}
+}
+
+void row_interchange(matrix* A, uint32_t row_idx1, uint32_t row_idx2){
+	uint32_t col_idx;
+	uint64_t temp;
+	for(col_idx=0; col_idx<A->words_in_row; ++col_idx){
+		temp 	 								= A->elem[row_idx1 * A->words_in_row + col_idx];
+		A->elem[row_idx1 * A->words_in_row + col_idx] = A->elem[row_idx2 * A->words_in_row + col_idx];
+		A->elem[row_idx2 * A->words_in_row + col_idx] = temp;
+	}
+}
+
+void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
+	for(int i = 0; i < r2 - r1; i++)
+		for(int j = 0; j < c2 - c1; j++)
+			set_element(dest, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
 }

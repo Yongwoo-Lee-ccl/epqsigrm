@@ -40,14 +40,11 @@ int is_nonsingular(matrix *mtx);
 
 void get_pivot(matrix* mtx, uint32_t *lead, uint32_t *lead_diff);
 
-
 void mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod); 
 void vec_mat_prod(matrix *dest, matrix* m, matrix *vec);
-int add(matrix *m1, matrix *m2, matrix *res);
+int mat_mat_add(matrix *m1, matrix *m2, matrix *res);
 
-
-
-void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff);
+void dual(matrix* G, matrix* H_sys, uint32_t *lead, uint32_t *lead_diff);
 void row_interchange(matrix* mtx, uint32_t row_idx1, uint32_t row_idx2);
 void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3);
 #endif

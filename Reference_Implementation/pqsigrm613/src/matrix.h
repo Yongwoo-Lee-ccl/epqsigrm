@@ -39,7 +39,7 @@ matrix* copy_matrix(matrix* dest, matrix* src);
 
 int mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod); 
 void vec_mat_prod(matrix *dest, matrix* m, matrix *vec);
-int add(matrix *m1, matrix *m2, matrix *res);
+int mat_mat_add(matrix *m1, matrix *m2, matrix *res);
 
 int export_matrix(unsigned char* dest, matrix* mtx);
 matrix* import_matrix(matrix* dest_mtx, const unsigned char* src);
