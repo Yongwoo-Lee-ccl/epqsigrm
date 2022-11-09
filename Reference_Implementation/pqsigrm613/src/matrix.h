@@ -18,14 +18,14 @@
 #define initZero(R) 			memset((R)->elem,0,(R)->alloc_size)
 
 typedef struct {
-   int rows;//number of rows.
-   int cols;//number of columns.
-   int rwdcnt;//number of words in a row
+   int nrows;//number of rows.
+   int ncols;//number of columns.
+   int words_in_row;//number of words in a row
    int alloc_size;//number of allocated bytes
    unsigned char *elem;//row index.
 } matrix;
 
-matrix* new_matrix(int rows, int cols) ;
+matrix* new_matrix(int nrows, int ncols) ;
 void delete_matrix(matrix * mtx) ;
 
 matrix* rref(matrix* mtx);

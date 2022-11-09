@@ -47,7 +47,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	vec_mat_prod(syndrome_by_e, H_pub, errorMtx);
 
 	for(i=0; i<CODE_N-CODE_K; ++i)
-		if(getElement(syndrome_by_hash, 0, i) != getElement(syndrome_by_e, 0, i))
+		if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i))
 			return VERIF_REJECT;
 
 	memcpy(m, m_rx, mlen_rx);

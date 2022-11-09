@@ -14,11 +14,11 @@ matrix* rm_gen(int r, int m, uint16_t row_f, uint16_t row_r, uint16_t col_f,
 
 	if (r == 0) {
 		for (int i = 0; i < (1<<m); i++) {
-			setElement(gen, row_f, col_f + i, 1);
+			set_element(gen, row_f, col_f + i, 1);
 		}
 	} else if (m == r) {
 		for (int i = 0; i < (1<<m); i++) {
-			 setElement(gen, row_f + i, col_f + i, 1);
+			 set_element(gen, row_f + i, col_f + i, 1);
 		}
 	} else {
 		uint16_t col_m = (col_f+col_r)/2;

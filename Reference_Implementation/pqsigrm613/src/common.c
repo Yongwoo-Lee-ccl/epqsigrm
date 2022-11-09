@@ -20,8 +20,8 @@ unsigned char* hash_message(unsigned char *s, const unsigned char *m,
 int hamming_weight(matrix* error){
 	int wgt=0;
 	int i=0;
-	for(i=0; i < error->cols; i++)
-		wgt += getElement(error, 0, i);
+	for(i=0; i < error->ncols; i++)
+		wgt += get_element(error, 0, i);
 	return wgt;
 }
 
@@ -78,12 +78,12 @@ uint16_t random16(uint16_t n){
 void col_permute(matrix* m, const int rf, const int rr, const int cf, 
 	const int cr, uint16_t* Q)
 {
-	matrix* mcpy = new_matrix(m->rows, m->cols); 
+	matrix* mcpy = new_matrix(m->nrows, m->ncols); 
 	memcpy(mcpy->elem, m->elem, m->alloc_size);
 	int r, c;
 	for(c = cf; c < cr; c++)
 		for(r = rf; r < rr; r++)
-			setElement(m, r, c, getElement(mcpy, r, cf + Q[c-cf]));
+			set_element(m, r, c, get_element(mcpy, r, cf + Q[c-cf]));
 	delete_matrix(mcpy);
 }
 

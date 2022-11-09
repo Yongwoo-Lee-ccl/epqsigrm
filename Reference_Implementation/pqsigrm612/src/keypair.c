@@ -26,9 +26,9 @@ void export_pk(unsigned char *pk, matrix *H_pub){
 int copy_columns(matrix *dest, matrix *src, uint16_t *lead ){
        int row, col;
        
-       for(row=0; row <dest->rows; ++row)
-               for(col=0; col < dest->cols; ++col)
-                       setElement(dest, row, col, getElement(src, row, lead[col]));
+       for(row=0; row <dest->nrows; ++row)
+               for(col=0; col < dest->ncols; ++col)
+                       set_element(dest, row, col, get_element(src, row, lead[col]));
 
        return 0;
 }

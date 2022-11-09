@@ -40,7 +40,7 @@ void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *s_lead){
 			yr[i] = yc[i] = 1.;
 
 		for(i =0; i<CODE_N-CODE_K; i++) 
-			if(getElement(syndrome, 0, i) == 1) 
+			if(get_element(syndrome, 0, i) == 1) 
 				yr[s_lead[i]] = yc[s_lead[i]] = -1.;
 }
 
@@ -83,7 +83,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	// compute Qinv*e'
 	matrix *sign = new_matrix(1, CODE_N);
 	for(i=0; i<CODE_N; i++){
-		setElement(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
+		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
 
 	// export message
