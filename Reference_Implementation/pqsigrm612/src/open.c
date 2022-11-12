@@ -39,7 +39,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 		return VERIF_REJECT;
 	
 
-	hash_message(syndrome_by_hash->elem, m_rx, mlen_rx, sign_i);
+	hash_message((unsigned char*)syndrome_by_hash->elem, m_rx, mlen_rx, sign_i);
 	
 	//import public key
 	import_pk(pk, H_pub);

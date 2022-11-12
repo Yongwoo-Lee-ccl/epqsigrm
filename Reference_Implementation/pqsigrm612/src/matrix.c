@@ -174,12 +174,12 @@ int is_nonsingular(matrix *mtx){
 	return INV_SUCCESS;
 }
 
-void get_pivot(matrix* mtx, uint32_t *lead, uint32_t *lead_diff){
+void get_pivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff){
 	uint32_t row=0, col=0;
 	uint32_t lead_idx=0, diff_idx=0;
 
 	while((col < mtx->ncols) && (row < mtx->nrows) && (lead_idx < mtx->nrows) && (diff_idx < (mtx->ncols - mtx->nrows))){
-		if(get_element(mtx, row, col) == 1){
+		if(get_element(mtx, row, col) == 1UL){
 			lead[lead_idx++] = col;
 			row++;
 		}
@@ -190,14 +190,15 @@ void get_pivot(matrix* mtx, uint32_t *lead, uint32_t *lead_diff){
 	}
 
 	while(col < mtx->ncols){
-		lead_diff[diff_idx++]=col++;
+		lead_diff[diff_idx++] = col++;
 	}
 }
 
 void mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
 	uint32_t row, col, k;
 	uint32_t val;
-	if(mtx1->ncols != mtx2->nrows) 	return -1;
+
+	assert(mtx1->ncols == mtx2->nrows);
 	
 	for (row = 0; row < mtx1->nrows; row++){ 
 		for (col = 0; col < mtx2->ncols; col++) {
@@ -248,15 +249,14 @@ int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
 	return 0;
 }
 
-void dual(matrix* G, matrix* H_sys, uint32_t *lead, uint32_t *lead_diff){
+void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff){
 	uint8_t flg = 0; 
 
 	if(lead == 0 || lead_diff == 0){
-		lead = (uint32_t*)malloc(sizeof(uint32_t)*G->nrows);
-		lead_diff = (uint32_t*)malloc(sizeof(uint32_t)*(G->ncols - G->nrows));	
+		lead = (uint16_t*)malloc(sizeof(uint16_t)*G->nrows);
+		lead_diff = (uint16_t*)malloc(sizeof(uint16_t)*(G->ncols - G->nrows));	
 		flg = 1;
 	}
-	
 
 	rref(G);
 	get_pivot(G, lead, lead_diff);

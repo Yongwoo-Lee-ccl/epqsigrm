@@ -13,7 +13,7 @@ int wgt(float *yc, float *yr)
 matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mtx
 	, const unsigned char *m, unsigned long long mlen, unsigned long long sign_i)
 {
-	hash_message(synd_mtx->elem, m, mlen, sign_i);
+	hash_message((unsigned char*)synd_mtx->elem, m, mlen, sign_i);
 	
 	vec_mat_prod(scrambled_synd_mtx, Sinv, synd_mtx);
 	return scrambled_synd_mtx;

@@ -11,6 +11,7 @@
 #include <openssl/sha.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 unsigned char* hash_message(unsigned char *s, const unsigned char *m, 
 	unsigned long long mlen, unsigned long long i);

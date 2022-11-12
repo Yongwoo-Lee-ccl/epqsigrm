@@ -65,7 +65,7 @@ main()
         printf("cycles keygen: %lld\n", toc-tic);
         
         tic = cpucycles();
-        if ( (ret_val = crypto_sign(sm, &smlen, m, mlen, sk)) != 0) {
+        if ( (ret_val = crypto_sign(sm, (unsigned long long *)&smlen, m, mlen, sk)) != 0) {
             printf("crypto_sign returned <%d>\n", ret_val);
             return RUN_CRYPTO_FAILURE;
         }
@@ -73,7 +73,7 @@ main()
         printf("cycles sign: %lld\n", toc-tic);
         
         tic = cpucycles();
-        if ( (ret_val = crypto_sign_open(m1, &mlen1, sm, smlen, pk)) != 0) {
+        if ( (ret_val = crypto_sign_open(m1, (unsigned long long *)&mlen1, sm, smlen, pk)) != 0) {
             printf("crypto_sign_open returned <%d>\n", ret_val);
             return RUN_CRYPTO_FAILURE;
         }
@@ -81,7 +81,7 @@ main()
         printf("cycles verif: %lld\n", toc-tic);
         
         if ( mlen != mlen1 ) {
-            printf("crypto_sign_open returned bad 'mlen': Got <%llu>, expected <%llu>\n", mlen1, mlen);
+            printf("crypto_sign_open returned bad 'mlen': Got <%lu>, expected <%lu>\n", mlen1, mlen);
             return RUN_CRYPTO_FAILURE;
         }
         
