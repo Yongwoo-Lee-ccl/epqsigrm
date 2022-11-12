@@ -20,12 +20,11 @@ int hamming_weight(matrix* e);
 
 void swap(uint16_t *Q, const int i, const int j);
 
-void permutation_gen(uint16_t *Q, int len);
+void permutation_gen(uint16_t *Q, uint32_t len);
 void partial_permutation_gen(uint16_t* Q);
 
 uint16_t random16(uint16_t n);
 
 void col_permute(matrix* G, const int rf, const int rr, const int cf, const int cr, uint16_t* Q);
-
 
 #endif 

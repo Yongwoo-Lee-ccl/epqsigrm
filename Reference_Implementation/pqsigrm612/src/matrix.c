@@ -89,13 +89,15 @@ matrix* rref(matrix* A)
 	return A;
 }
 
-matrix* transpose(matrix *dest, matrix *src){
-	if((dest->nrows != src->ncols) || (dest->ncols != src->nrows))
-		return MATRIX_NULL;
+matrix* transpose(matrix *src, matrix *dest){
+	assert((dest->nrows == src->ncols) && (dest->ncols == src->nrows));
 
-	for(uint32_t row = 0; row < dest->nrows; ++row)
-		for(uint32_t col = 0; col < dest->ncols; ++col)
+	for(uint32_t row = 0; row < dest->nrows; ++row){
+		for(uint32_t col = 0; col < dest->ncols; ++col){
 			set_element(dest, row, col, get_element(src, col, row));
+		}
+	}
+		
 	return dest;
 }
 
@@ -221,16 +223,17 @@ void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 	uint64_t offset;
 	uint32_t row, col;
 	for(row = 0; row < m->nrows; row++){
-		bit = 0;
+		bit = 0UL;
 		// assume all zero bit in unnecessary position
-		for(col=0; col < m->words_in_row; col++)
+		// for(col_word=0; col_word < m->words_in_row; col_word++){
+		// 	bit ^= m->elem[(m->words_in_row)*row + col_word] & vec->elem[col_word];
+		// }
+		
+		for(col=0; col < m->words_in_row - 1; col++)
 			bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
-
-		// for(col=0; col < m->words_in_row - 1; col++)
-		// 	bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
 	
-		// offset = 0xffffffffffffffffUL << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
-		// bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col]) & offset;
+		offset = 0xffffffffffffffffUL << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
+		bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col]) & offset;
 
 		bit ^= (bit >> 32);
 		bit ^= (bit >> 16);
@@ -290,8 +293,8 @@ void row_interchange(matrix* A, uint32_t row_idx1, uint32_t row_idx2){
 	}
 }
 
-void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
-	for(int i = 0; i < r2 - r1; i++)
-		for(int j = 0; j < c2 - c1; j++)
+void partial_replace(matrix* dest, const uint32_t r1, const uint32_t c1,const uint32_t r2, const uint32_t c2, matrix* src, const int r3, const int c3){
+	for(uint32_t i = 0; i < r2 - r1; i++)
+		for(uint32_t j = 0; j < c2 - c1; j++)
 			set_element(dest, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
 }

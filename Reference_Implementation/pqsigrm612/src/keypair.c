@@ -23,34 +23,22 @@ void export_pk(unsigned char *pk, matrix *H_pub){
 	export_matrix(pk, H_pub);
 }
 
-int copy_columns(matrix *dest, matrix *src, uint32_t *lead ){
-       int row, col;
-       
-       for(row=0; row <dest->nrows; ++row)
-               for(col=0; col < dest->ncols; ++col)
-                       set_element(dest, row, col, get_element(src, row, lead[col]));
-
-       return 0;
-}
-
 int
 crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
-	// fprintf(stderr, "key pair start\n");
 	matrix* G_M = new_matrix(CODE_K, CODE_N);
-	// fprintf(stderr, "G_M pointer %p\n", G_M->elem);
 
-	uint16_t* Q = (uint16_t*)malloc(sizeof(uint16_t)*CODE_N);
+	uint16_t* Q = (uint16_t*)malloc(sizeof(uint16_t) * CODE_N);
 	matrix* H_M = new_matrix(CODE_N - CODE_K, CODE_N);
 	matrix* H_pub = new_matrix(CODE_N - CODE_K, CODE_N);
 
 	matrix* S = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 
-	uint16_t* part_perm1 = (uint16_t*)malloc(sizeof(uint16_t)*(CODE_N/4));
-	uint16_t* part_perm2 = (uint16_t*)malloc(sizeof(uint16_t)*(CODE_N/4));
+	uint16_t* part_perm1 = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N/4));
+	uint16_t* part_perm2 = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N/4));
 
-	uint16_t* s_lead = (uint16_t*)malloc(sizeof(uint16_t)*(CODE_N - CODE_K));
-	uint16_t* s_diff = (uint16_t*)malloc(sizeof(uint16_t)*CODE_K);
+	uint16_t* s_lead = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N - CODE_K));
+	uint16_t* s_diff = (uint16_t*)malloc(sizeof(uint16_t) * CODE_K);
 
 	// generate secret parital permutations
 	partial_permutation_gen(part_perm1);

@@ -19,6 +19,18 @@ matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mt
 	return scrambled_synd_mtx;
 }
 
+void print_matrix_sign(matrix* mtx){
+    uint32_t row = mtx->nrows;
+    uint32_t col = mtx->ncols;
+    for (size_t i = 0; i < row; i++)
+    {
+        for (size_t j = 0; j < col; j++)
+        {
+            printf("%d",get_element(mtx, i,j));
+        }printf("\n");
+    }
+    
+}
 
 void import_sk(const unsigned char *sk, matrix *Sinv
 		, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2
@@ -50,13 +62,12 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	const unsigned char *sk){
 
 	// read secret key(bit stream) into appropriate type.
-	matrix* Sinv = new_matrix(CODE_N-CODE_K, CODE_N-CODE_K);
+	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
 	import_sk(sk, Sinv, &Q, &part_perm1, &part_perm2, &s_lead);
 	// Do signing, decode until the a error vector wt <= w is achieved
-	int i, j;
 	
-	unsigned long long sign_i;
+	uint64_t sign_i;
 
 	// unsigned char sign[CODE_N];
 	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
@@ -68,7 +79,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	init_decoding(CODE_N);
 	while(1){
 		//random number
-		randombytes((unsigned char*)&sign_i, sizeof(unsigned long long));
+		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
 		// Find syndrome
 		syndromeForMsg(scrambled_synd_mtx, Sinv, synd_mtx, m, mlen, sign_i);
 		y_init(yc, yr, scrambled_synd_mtx, s_lead);
@@ -80,9 +91,11 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// Check Hamming weight of e'
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
 	}
+	printf("syndrome\n");
+	print_matrix_sign(synd_mtx);
 	// compute Qinv*e'
 	matrix *sign = new_matrix(1, CODE_N);
-	for(i=0; i<CODE_N; i++){
+	for(uint32_t i=0; i < CODE_N; i++){
 		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
 

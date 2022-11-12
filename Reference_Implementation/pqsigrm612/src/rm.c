@@ -37,8 +37,7 @@ matrix* rm_gen_mod(matrix* gen, uint16_t *part_perm1, uint16_t *part_perm2) {
 
 	rm_gen(gen, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
 
-	int i =0;
-	for (i = 0; i < 4; ++i)
+	for (uint32_t i = 0; i < 4; ++i)
 	{
 		col_permute(gen, 0, rm_dim[RM_R][RM_M -2], 
 			i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);

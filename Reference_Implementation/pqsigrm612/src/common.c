@@ -35,16 +35,17 @@ void swap16(uint16_t *Q, const int i, const int j){
 	Q[j] = temp;
 }
 
-void permutation_gen(uint16_t *Q, int len){
-	int i; 
-	for(i=0; i<len; i++)
+void permutation_gen(uint16_t *Q, uint32_t len){
+	uint32_t i; 
+	for(i=0; i<len; i++){
 		Q[i] = i;
-	for(i=0; i<len; i++)
+	}
+	for(i=0; i<len; i++){
 		swap16(Q, i, random16(len));
+	}
 }
 
 int static compare(const void* first, const void* second){
-	
 	return (*(uint16_t*)first > *(uint16_t*)second)?1:-1;
 }
 
@@ -52,7 +53,6 @@ void partial_permutation_gen(uint16_t* Q){
 	permutation_gen(Q, CODE_N/4);
 	uint16_t* partial_elem = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
 	uint16_t* partial_perm = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
-		
 
 	memcpy(partial_perm, Q, sizeof(uint16_t)*PARM_P);
 	memcpy(partial_elem, Q, sizeof(uint16_t)*PARM_P);
@@ -60,13 +60,13 @@ void partial_permutation_gen(uint16_t* Q){
 	qsort(partial_elem, PARM_P, sizeof(uint16_t), compare);
 	qsort(Q, CODE_N/4, sizeof(uint16_t), compare);
 
-	int i;
-	for (i = 0; i < PARM_P; ++i)
+	for (uint32_t i = 0; i < PARM_P; ++i)
 	{
 		Q[partial_elem[i]] = partial_perm[i];
 	}
 
-	free(partial_elem);free(partial_perm);
+	free(partial_elem);
+	free(partial_perm);
 }
 
 uint16_t random16(uint16_t n){
@@ -80,12 +80,13 @@ void col_permute(matrix* m, const int rf, const int rr, const int cf,
 {
 	matrix* mcpy = new_matrix(m->nrows, m->ncols); 
 	memcpy(mcpy->elem, m->elem, m->alloc_size);
-	int r, c;
-	for(c = cf; c < cr; c++)
-		for(r = rf; r < rr; r++)
-			set_element(m, r, c, get_element(mcpy, r, cf + Q[c-cf]));
 
-	// fprintf(stderr, "delete mcpy\n");
+	for(uint32_t c = cf; c < cr; c++){
+		for(uint32_t r = rf; r < rr; r++){
+			set_element(m, r, c, get_element(mcpy, r, cf + Q[c-cf]));
+		}
+	}
+
 	delete_matrix(mcpy);
 }
 
