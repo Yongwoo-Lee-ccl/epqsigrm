@@ -99,7 +99,9 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	*smlen = sizeof(unsigned long long) + mlen + sign->alloc_size + sizeof(unsigned long long);
 	
 	delete_matrix(Sinv);
-	delete_matrix(synd_mtx);	delete_matrix(scrambled_synd_mtx);
-	free(yr); free(yc);
+	delete_matrix(synd_mtx);
+	delete_matrix(scrambled_synd_mtx);
+	free(yr);
+	free(yc);
 	return 0;	
 }

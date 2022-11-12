@@ -69,9 +69,6 @@ void partial_permutation_gen(uint16_t* Q){
 	free(partial_elem);free(partial_perm);
 }
 
-
-
-
 uint16_t random16(uint16_t n){
 	uint16_t r;
 	randombytes((unsigned char*)&r, 2);
@@ -87,6 +84,8 @@ void col_permute(matrix* m, const int rf, const int rr, const int cf,
 	for(c = cf; c < cr; c++)
 		for(r = rf; r < rr; r++)
 			set_element(m, r, c, get_element(mcpy, r, cf + Q[c-cf]));
+
+	// fprintf(stderr, "delete mcpy\n");
 	delete_matrix(mcpy);
 }
 

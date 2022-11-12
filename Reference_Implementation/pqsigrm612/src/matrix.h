@@ -17,7 +17,7 @@
 #define get_element(A, i, j) 		(!!((A)->elem[(i) * (A)->words_in_row + (j) / ELEMBLOCKSIZE] & ((1UL) << ((j) % ELEMBLOCKSIZE))))
 #define flip_element(A, i, j) 	((A)->elem[(i) * (A)->words_in_row + (j) / ELEMBLOCKSIZE] ^= ((1UL) << ((j) % ELEMBLOCKSIZE)))
 #define set_element(A, i, j, val) 	((get_element((A), (i), (j)) == (val))? 0 : flip_element((A), (i),(j)))
-#define init_zero(R) 			memset((R)->elem,0,(R)->alloc_size)
+#define init_zero(R) 			memset((R)->elem, 0, (R)->alloc_size)
 
 typedef struct {
    uint32_t nrows;//number of rows.

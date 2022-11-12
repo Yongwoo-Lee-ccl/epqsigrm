@@ -16,8 +16,11 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 
 void delete_matrix(matrix* A)
 {
-  free(A->elem);
-  free(A);
+	// fprintf(stderr, "elem pointer %p\n", A->elem);	
+	free(A->elem);
+	// fprintf(stderr, "free elem\n");
+	free(A);
+	// fprintf(stderr, "free A\n");
 }
 
 // internal method
@@ -29,7 +32,7 @@ void row_addition_internal(matrix* A, int dest_row_idx, int adding_row_idx){
 }
 
 matrix* copy_matrix(matrix* dest, matrix* src){
-	if(dest->nrows != src->nrows || dest->ncols!=src->ncols) return MATRIX_NULL;
+	assert(dest->nrows == src->nrows && dest->ncols == src->ncols);
 	
 	memcpy(dest->elem, src->elem, dest->alloc_size);
 	return dest;
@@ -73,7 +76,7 @@ matrix* rref(matrix* A)
 		// By adding <succ_row_idx> th row in the other nrows 
 		// s.t. A(i, <succ_row_idx>) == 1,
 		// making previous columns as element row.
-		for(uint32_t i = 0; i<A->nrows; ++i){
+		for(uint32_t i = 0; i < A->nrows; ++i){
 			if(i == succ_row_idx) continue;
 
 			if(get_element(A, i, col_idx) == 1){
@@ -105,9 +108,7 @@ int inverse(matrix *mtx, matrix *mtxInv){
 	copy_matrix(temp, mtx);
 
 	uint32_t r, c;
-	for(r = 0; r < mtxInv->alloc_size;++r){
-		mtxInv->elem[r] = 0;
-	}
+	init_zero(mtxInv);
 
 	for (r = 0; r <  mtxInv->nrows; ++r)
 	{
@@ -137,6 +138,8 @@ int inverse(matrix *mtx, matrix *mtxInv){
 			}
 		}
 	}
+	
+	// fprintf(stderr, "delete temp\n");
 	delete_matrix(temp);
 	return INV_SUCCESS;
 }
@@ -170,6 +173,8 @@ int is_nonsingular(matrix *mtx){
 			}
 		}
 	}
+
+	// fprintf(stderr, "delete temp\n");
 	delete_matrix(temp);
 	return INV_SUCCESS;
 }

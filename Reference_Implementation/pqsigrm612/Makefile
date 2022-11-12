@@ -13,10 +13,13 @@ CFILES := $(shell find src -name '*.c' | sed -e 's/\.c/\.o/')
 OBJS = ${CFILES}
 
 sign: ${OBJS} ./PQCgenKAT_sign.c
-	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^  $(LIBFLAGS)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
 runtime: ${OBJS} ./runtime.c
-	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^  $(LIBFLAGS)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
+
+test: ${OBJS} ./test.c
+	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
 %.o : %.c
 	$(CC) $(CFLAGS) -o $@ -c $< 
