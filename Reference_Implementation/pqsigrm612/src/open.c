@@ -55,7 +55,10 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	
 	//import public key
 	import_pk(pk, H_pub);
-	
+	// printf("H pub:\n");
+	// print_matrix_open(H_pub);
+	printf("error:\n");
+	print_matrix_open(errorMtx);
 	vec_mat_prod(syndrome_by_e, H_pub, errorMtx);
 
 	for(uint32_t i=0; i < CODE_N-CODE_K; ++i){

@@ -221,19 +221,27 @@ void mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
 void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 	uint64_t bit = 0;
 	uint64_t offset;
-	uint32_t row, col;
+	uint32_t row, col_word;
 	for(row = 0; row < m->nrows; row++){
-		bit = 0UL;
-		// assume all zero bit in unnecessary position
-		// for(col_word=0; col_word < m->words_in_row; col_word++){
-		// 	bit ^= m->elem[(m->words_in_row)*row + col_word] & vec->elem[col_word];
-		// }
+		bit = 0;
+		//assume all zero bit in unnecessary position
+		for(col_word = 0; col_word < m->words_in_row; col_word++){
+			bit ^= m->elem[(m->words_in_row)*row + col_word] & vec->elem[col_word];
+		}
 		
-		for(col=0; col < m->words_in_row - 1; col++)
-			bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
+		// for(col=0; col < m->words_in_row - 1; col++)
+		// 	bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
 	
-		offset = 0xffffffffffffffffUL << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
-		bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col]) & offset;
+		// offset = 0xffffffffffffffffUL << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
+		// bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col]) & offset;
+		// printf("bit: \n");
+		// for (size_t i = 0; i < 64; i++)
+		// {	
+		// 	if(i % 4 == 0){
+		// 		printf(" ");
+		// 	}
+		// 	printf("%d", (bit >> (ELEMBLOCKSIZE - 1 - i)) & (uint64_t)1);
+		// }printf("\n32\n");
 
 		bit ^= (bit >> 32);
 		bit ^= (bit >> 16);
@@ -241,7 +249,7 @@ void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 		bit ^= (bit >> 4);
 		bit ^= (bit >> 2);
 		bit ^= (bit >> 1);
-		bit &= 1UL;
+		bit &= (uint64_t)1;
 		
 		set_element(dest, 0, row, bit);
 	}
