@@ -34,10 +34,10 @@ void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uin
 * yr and yc are equal at the end.
 */
 void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *Q){
-		for(uint32_t i=0; i < CODE_N-CODE_K; i++) {
+		for(uint32_t i=0; i < CODE_N - CODE_K - 1; i++) {
 			yc[i] = (get_element(syndrome, 0, i) == 0)? 1.:-1.;
 		}
-		for(uint32_t i=CODE_N-CODE_K; i < CODE_N; i++) {
+		for(uint32_t i=CODE_N-CODE_K - 1; i < CODE_N; i++) {
 			yc[i] = 1.;
 		}
 
@@ -56,7 +56,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	const unsigned char *sk){
 
 	// read secret key(bit stream) into appropriate type.
-	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
 
 	import_sk(sk, &Q, &part_perm1, &part_perm2);
@@ -66,7 +65,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	uint64_t sign_i;
 
 	// unsigned char sign[CODE_N];
-	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
+	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K - 1);
 
 	float yc[CODE_N], yr[CODE_N];
 	

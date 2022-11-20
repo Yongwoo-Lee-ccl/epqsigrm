@@ -30,10 +30,10 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
                  const unsigned char *pk){
 	matrix *errorMtx = new_matrix(1, CODE_N);
 
-	matrix *H_pub = new_matrix(CODE_N - CODE_K, CODE_N);
+	matrix *H_pub = new_matrix(CODE_N - CODE_K - 1, CODE_N);
 
-	matrix *syndrome_by_hash = new_matrix(1, CODE_N - CODE_K);
-	matrix *syndrome_by_e	 = new_matrix(1, CODE_N - CODE_K);
+	matrix *syndrome_by_hash = new_matrix(1, CODE_N - CODE_K - 1);
+	matrix *syndrome_by_e	 = new_matrix(1, CODE_N - CODE_K - 1);
 
 	uint64_t sign_i;
 	uint64_t mlen_rx;
@@ -55,13 +55,10 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	
 	//import public key
 	import_pk(pk, H_pub);
-	// printf("H pub:\n");
-	// print_matrix_open(H_pub);
-	// printf("error:\n");
-	// print_matrix_open(errorMtx);
+
 	vec_mat_prod(syndrome_by_e, H_pub, errorMtx);
 
-	for(uint32_t i=0; i < CODE_N-CODE_K; ++i){
+	for(uint32_t i=0; i < CODE_N-CODE_K - 1; ++i){
 		if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
 			fprintf(stderr, "different hash\n");
 			printf("hashed value: \n");

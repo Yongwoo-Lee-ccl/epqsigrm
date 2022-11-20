@@ -34,7 +34,7 @@ void row_addition_internal(matrix* A, int dest_row_idx, int adding_row_idx){
 matrix* copy_matrix(matrix* dest, matrix* src){
 	assert(dest->nrows == src->nrows && dest->ncols == src->ncols);
 	
-	memcpy(dest->elem, src->elem, dest->alloc_size);
+	memcpy(dest->elem, src->elem, src->alloc_size);
 	return dest;
 }
 
@@ -304,4 +304,24 @@ void partial_replace(matrix* dest, const uint32_t r1, const uint32_t c1,const ui
 	for(uint32_t i = 0; i < r2 - r1; i++)
 		for(uint32_t j = 0; j < c2 - c1; j++)
 			set_element(dest, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
+}
+
+void codeword(matrix* src, uint8_t* seed, matrix* dest){
+	for (uint32_t i = 0; i < src->nrows; i++)
+	{
+		uint8_t window = 0x80 >> (i%8);
+		uint8_t bit = seed[i/8] & window;
+
+		if (bit == 1)
+		{
+			for (uint32_t j = 0; j < src->words_in_row; j++)
+			{
+				dest->elem[j] ^= src->elem[src->words_in_row * i + j];
+			}
+			
+		}
+		
+	}
+	
+	
 }

@@ -48,4 +48,7 @@ int mat_mat_add(matrix *m1, matrix *m2, matrix *res);
 void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff);
 void row_interchange(matrix* mtx, uint32_t row_idx1, uint32_t row_idx2);
 void partial_replace(matrix* dest, const uint32_t r1, const uint32_t c1,const uint32_t r2, const uint32_t c2, matrix* src, const int r3, const int c3);
+
+void codeword(matrix* src, uint8_t* seed, matrix* dest);
+
 #endif

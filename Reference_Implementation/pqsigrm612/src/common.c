@@ -51,8 +51,8 @@ int static compare(const void* first, const void* second){
 
 void partial_permutation_gen(uint16_t* Q){
 	permutation_gen(Q, CODE_N/4);
-	uint16_t* partial_elem = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
-	uint16_t* partial_perm = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
+	uint16_t partial_elem[PARM_P];
+	uint16_t partial_perm[PARM_P];
 
 	memcpy(partial_perm, Q, sizeof(uint16_t)*PARM_P);
 	memcpy(partial_elem, Q, sizeof(uint16_t)*PARM_P);
@@ -64,9 +64,6 @@ void partial_permutation_gen(uint16_t* Q){
 	{
 		Q[partial_elem[i]] = partial_perm[i];
 	}
-
-	free(partial_elem);
-	free(partial_perm);
 }
 
 uint16_t random16(uint16_t n){

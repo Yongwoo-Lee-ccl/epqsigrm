@@ -11,16 +11,18 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 					part_perm2, sizeof(uint16_t)*CODE_N/4);
 }
 
-void export_pk(unsigned char *pk, matrix *H_pub){
-	export_matrix(pk, H_pub);
+void export_pk(unsigned char *pk, matrix *Hpub){
+	export_matrix(pk, Hpub);
 }
 
 int
 crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
-	matrix* G_M = new_matrix(CODE_K, CODE_N);
+	// nrows of Gm is set to K + 1 for public key
+	matrix* Gm = new_matrix(CODE_K, CODE_N);
+	matrix* Hm = new_matrix(CODE_N - CODE_K, CODE_N);
 
-	matrix* H_M = new_matrix(CODE_N - CODE_K, CODE_N);
-	matrix* H_pub = new_matrix(CODE_N - CODE_K, CODE_N);
+	matrix* Gpub = new_matrix(CODE_K + 1, CODE_N);
+	matrix* Hpub = new_matrix(CODE_N - CODE_K - 1, CODE_N);
 
 	uint16_t Q[CODE_N];
 	
@@ -34,31 +36,37 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	partial_permutation_gen(part_perm1);
 	partial_permutation_gen(part_perm2);
 	
-	// Generate a partially permute generator matrix G_M
-	// fprintf(stderr, "gen mod start\n");
-	rm_gen_mod(G_M, part_perm1, part_perm2);
-	// fprintf(stderr, "gen mod\n");
+	// Generate a partially permute generator matrix Gm
+	rm_gen_mod(Gm, part_perm1, part_perm2);
 
 	// Parity check matrix of the modified RM code
-	dual(G_M, H_M, 0, 0);
-	
+	dual(Gm, Hm, 0, 0);
 
-	// Generate a Scrambling matrix and its inverse. 
+	// pick a random codeword from the dual code
+	matrix* rand_codeword = new_matrix(1, CODE_N);
+	uint8_t seed[1 + (Hm->nrows -  1)/8];
+	randombytes(seed, 1 + (Hm->nrows -  1)/8);
+	codeword(Hm, seed, rand_codeword);
+
+	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
+	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, rand_codeword, 0, 0);
+
+	// Generate the permutation for whole matrix
 	permutation_gen(Q, CODE_N);
-	
-	matrix* Hcpy = new_matrix(H_M->nrows, H_M->ncols); 
-	memcpy(Hcpy->elem, H_M->elem, H_M->alloc_size);
-	rref(Hcpy); 
-	get_pivot(Hcpy, s_lead, s_diff);
 
-	col_permute(Hcpy, 0, CODE_N-CODE_K, 0, CODE_N, Q);
+	// Generate the dual code of Gm and the public key
+	dual(Gpub, Hpub, 0, 0);
+	matrix* Hcpy = new_matrix(Hpub->nrows, Hpub->ncols); 
+	memcpy(Hcpy->elem, Hpub->elem, Hpub->alloc_size);
+
+	col_permute(Hcpy, 0, Hcpy->nrows, 0, Hcpy->ncols, Q);
 	rref(Hcpy);
 
-	uint16_t pivot[CODE_N - CODE_K];
-	uint16_t d_pivot[CODE_K];
+	uint16_t pivot[Hcpy->nrows];
+	uint16_t d_pivot[Hcpy->ncols - Hcpy->nrows];
 	get_pivot(Hcpy, pivot, d_pivot);
 
-	for (uint32_t i = 0; i < CODE_N - CODE_K; i++)
+	for (uint32_t i = 0; i < Hcpy->nrows; i++)
 	{
 		if(pivot[i] != i){
 			uint16_t tmp = Q[i];
@@ -67,35 +75,27 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		}		
 	}
 	
-	col_permute(H_M, 0, CODE_N-CODE_K, 0, CODE_N, Q);
-	rref(H_M);
+	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
+	rref(Hpub);
 
-	for (uint32_t i = 0; i < CODE_N - CODE_K; i++)
+	// DEBUG
+	for (uint32_t i = 0; i < Hpub->nrows; i++)
 	{
-		if(get_element(H_M, i, i) != 1){
-			printf("not identity!, %d, %d, %d\n", i, i, get_element(H_M, i, i));
+		if(get_element(Hpub, i, i) != 1){
+			printf("not identity!, %d, %d, %d\n", i, i, get_element(Hm, i, i));
 		}		
 	}
 
-	copy_matrix(H_pub, H_M);
-	// fprintf(stderr, "Hpubgen\n");
-	
-	// fprintf(stderr, "mat mul\n");	
-
 	export_sk(sk, Q, part_perm1, part_perm2);
-
-	// printf("slead_cpy:\n");
-	// for (size_t i = 0; i < CODE_N - CODE_K; i++)
-	// {
-	// 	printf("%4d ", slead_cpy[i]);
-	// }printf("\n");
 	// printf("sk: %p, pk: %p\n", sk, pk);
 	
-	export_pk(pk, H_pub);
+	export_pk(pk, Hpub);
 
-	delete_matrix(G_M);
-	delete_matrix(H_M);
-	delete_matrix(H_pub); 
+	delete_matrix(Gm);
+	delete_matrix(Hm);
+	delete_matrix(Gpub);
+	delete_matrix(Hpub);
+	delete_matrix(Hcpy);
 
 	return 0;
 }
