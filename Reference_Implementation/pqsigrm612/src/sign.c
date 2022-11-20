@@ -10,15 +10,6 @@ int wgt(float *yc, float *yr)
 	return w;
 }
 
-matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mtx
-	, const unsigned char *m, unsigned long long mlen, unsigned long long sign_i)
-{
-	hash_message((unsigned char*)synd_mtx->elem, m, mlen, sign_i);
-	
-	vec_mat_prod(scrambled_synd_mtx, Sinv, synd_mtx);
-	return scrambled_synd_mtx;
-}
-
 void print_matrix_sign(matrix* mtx){
     uint32_t row = mtx->nrows;
     uint32_t col = mtx->ncols;
@@ -45,15 +36,23 @@ void import_sk(const unsigned char *sk, matrix *Sinv
 					+sizeof(uint16_t)*CODE_N/2);
 }
 
-void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *s_lead){
-		for(uint32_t i=0; i < CODE_N; i++) {
-			yr[i] = yc[i] = 1.;
+/*
+* yr and yc are equal at the end.
+*/
+void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *Q){
+		for(uint32_t i=0; i < CODE_N-CODE_K; i++) {
+			yc[i] = (get_element(syndrome, 0, i) == 0)? 1.:-1.;
+		}
+		for(uint32_t i=CODE_N-CODE_K; i < CODE_N; i++) {
+			yc[i] = 1.;
 		}
 
-		for(uint32_t i =0; i < CODE_N-CODE_K; i++) {
-			if(get_element(syndrome, 0, i) == 1) {
-				yr[s_lead[i]] = yc[s_lead[i]] = -1.;
-			}
+		// yr first, yc next
+		for(uint32_t i =0; i < CODE_N; i++) {
+			yr[Q[i]] = yc[i];
+		}
+		for(uint32_t i =0; i < CODE_N; i++) {
+			yc[i] = yr[i];
 		}
 }
 
@@ -75,7 +74,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 
 	// unsigned char sign[CODE_N];
 	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
-	matrix *scrambled_synd_mtx = new_matrix(1, CODE_N - CODE_K);
 
 	float yc[CODE_N], yr[CODE_N];
 	
@@ -84,8 +82,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		//random number
 		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
 		// Find syndrome
-		syndromeForMsg(scrambled_synd_mtx, Sinv, synd_mtx, m, mlen, sign_i);
-		y_init(yc, yr, scrambled_synd_mtx, s_lead);
+		hash_message((unsigned char*)synd_mtx->elem, m, mlen, sign_i);
+		y_init(yc, yr, synd_mtx, Q);
 		// printf("s_lead:\n");
 		// for (size_t i = 0; i < CODE_N - CODE_K; i++)
 		// {
@@ -109,6 +107,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// Check Hamming weight of e'
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
 	}
+
 	// printf("syndrome\n");
 	// print_matrix_sign(synd_mtx);
 	// compute Qinv*e'
@@ -132,7 +131,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	
 	delete_matrix(Sinv);
 	delete_matrix(synd_mtx);
-	delete_matrix(scrambled_synd_mtx);
 
 	return 0;	
 }

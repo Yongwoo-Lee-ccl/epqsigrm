@@ -50,25 +50,42 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 
 	// Parity check matrix of the modified RM code
 	dual(G_M, H_M, 0, 0);
-	rref(H_M); 
-	get_pivot(H_M, s_lead, s_diff);
-	// printf("s_lead:\n");
-	// for (size_t i = 0; i < CODE_N - CODE_K; i++)
-	// {
-	// 	printf("%4d ", s_lead[i]);
-	// }printf("\n");
-
-	// fprintf(stderr, "pivot\n");
+	
 
 	// Generate a Scrambling matrix and its inverse. 
-	do{
-		randombytes((unsigned char*)S->elem, S->alloc_size);
-	}while(is_nonsingular(S) != INV_SUCCESS);
-	inverse(S, Sinv);
-	// fprintf(stderr, "s inv\n");
 	permutation_gen(Q, CODE_N);
-	// fprintf(stderr, "Qgen\n");
+	
+	matrix* Hcpy = new_matrix(H_M->nrows, H_M->ncols); 
+	memcpy(Hcpy->elem, H_M->elem, H_M->alloc_size);
+	rref(Hcpy); 
+	get_pivot(Hcpy, s_lead, s_diff);
+
+	col_permute(Hcpy, 0, CODE_N-CODE_K, 0, CODE_N, Q);
+	rref(Hcpy);
+
+	uint16_t pivot[CODE_N - CODE_K];
+	uint16_t d_pivot[CODE_K];
+	get_pivot(Hcpy, pivot, d_pivot);
+
+	for (uint32_t i = 0; i < CODE_N - CODE_K; i++)
+	{
+		if(pivot[i] != i){
+			uint16_t tmp = Q[i];
+			Q[i] = Q[pivot[i]];
+			Q[pivot[i]] = tmp;
+		}		
+	}
+	
 	col_permute(H_M, 0, CODE_N-CODE_K, 0, CODE_N, Q);
+	rref(H_M);
+
+	for (uint32_t i = 0; i < CODE_N - CODE_K; i++)
+	{
+		if(get_element(H_M, i, i) != 1){
+			printf("not identity!, %d, %d, %d\n", i, i, get_element(H_M, i, i));
+		}		
+	}
+
 	copy_matrix(H_pub, H_M);
 	// fprintf(stderr, "Hpubgen\n");
 	
@@ -83,7 +100,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	// }printf("\n");
 	// printf("sk: %p, pk: %p\n", sk, pk);
 	
-	mat_mat_prod(S, H_M, H_pub);
 	export_pk(pk, H_pub);
 
 	delete_matrix(G_M);

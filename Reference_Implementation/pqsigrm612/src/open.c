@@ -63,11 +63,11 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 
 	for(uint32_t i=0; i < CODE_N-CODE_K; ++i){
 		if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
-			// fprintf(stderr, "different hash\n");
-			// printf("hashed value: \n");
-			// print_matrix_open(syndrome_by_hash);
-			// printf("H*e value: \n");
-			// print_matrix_open(syndrome_by_e);
+			fprintf(stderr, "different hash\n");
+			printf("hashed value: \n");
+			print_matrix_open(syndrome_by_hash);
+			printf("H*e value: \n");
+			print_matrix_open(syndrome_by_e);
 			return VERIF_REJECT;
 		}
 	}
