@@ -54,8 +54,9 @@ void recursive_decoding_mod(float* y, const  int r1, const int m1,
 	}
 	
 	if(f == 0 && l == CODE_N/4) 
-		y_permute(y, f, l, perm1);// partial depermutation
-	if(f == 3*CODE_N/4 && l == CODE_N) // partial depermutation
+		y_permute(y, f, l, perm1);// partial permutation
+
+	if(f == 3*CODE_N/4 && l == CODE_N) // partial permutation
 		y_permute(y, f, l, perm2);
 	
 	return;

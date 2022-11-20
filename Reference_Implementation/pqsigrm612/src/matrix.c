@@ -176,7 +176,6 @@ int is_nonsingular(matrix *mtx){
 		}
 	}
 
-	// fprintf(stderr, "delete temp\n");
 	delete_matrix(temp);
 	return INV_SUCCESS;
 }

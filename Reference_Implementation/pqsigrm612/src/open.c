@@ -57,17 +57,17 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	import_pk(pk, H_pub);
 	// printf("H pub:\n");
 	// print_matrix_open(H_pub);
-	printf("error:\n");
-	print_matrix_open(errorMtx);
+	// printf("error:\n");
+	// print_matrix_open(errorMtx);
 	vec_mat_prod(syndrome_by_e, H_pub, errorMtx);
 
 	for(uint32_t i=0; i < CODE_N-CODE_K; ++i){
 		if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
-			fprintf(stderr, "different hash\n");
-			printf("hashed value: \n");
-			print_matrix_open(syndrome_by_hash);
-			printf("H*e value: \n");
-			print_matrix_open(syndrome_by_e);
+			// fprintf(stderr, "different hash\n");
+			// printf("hashed value: \n");
+			// print_matrix_open(syndrome_by_hash);
+			// printf("H*e value: \n");
+			// print_matrix_open(syndrome_by_e);
 			return VERIF_REJECT;
 		}
 	}

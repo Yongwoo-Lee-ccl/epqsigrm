@@ -46,14 +46,15 @@ void import_sk(const unsigned char *sk, matrix *Sinv
 }
 
 void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *s_lead){
-		int i;
-
-		for(i=0; i<CODE_N; i++) 
+		for(uint32_t i=0; i < CODE_N; i++) {
 			yr[i] = yc[i] = 1.;
+		}
 
-		for(i =0; i<CODE_N-CODE_K; i++) 
-			if(get_element(syndrome, 0, i) == 1) 
+		for(uint32_t i =0; i < CODE_N-CODE_K; i++) {
+			if(get_element(syndrome, 0, i) == 1) {
 				yr[s_lead[i]] = yc[s_lead[i]] = -1.;
+			}
+		}
 }
 
 int
@@ -64,7 +65,10 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	// read secret key(bit stream) into appropriate type.
 	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
+
 	import_sk(sk, Sinv, &Q, &part_perm1, &part_perm2, &s_lead);
+	
+	// assert(0);
 	// Do signing, decode until the a error vector wt <= w is achieved
 	
 	uint64_t sign_i;
@@ -73,8 +77,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
 	matrix *scrambled_synd_mtx = new_matrix(1, CODE_N - CODE_K);
 
-	float *yc = (float*)malloc(sizeof(float)*CODE_N);
-	float *yr = (float*)malloc(sizeof(float)*CODE_N);
+	float yc[CODE_N], yr[CODE_N];
 	
 	init_decoding(CODE_N);
 	while(1){
@@ -83,6 +86,21 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// Find syndrome
 		syndromeForMsg(scrambled_synd_mtx, Sinv, synd_mtx, m, mlen, sign_i);
 		y_init(yc, yr, scrambled_synd_mtx, s_lead);
+		// printf("s_lead:\n");
+		// for (size_t i = 0; i < CODE_N - CODE_K; i++)
+		// {
+		// 	printf("%4d ", s_lead[i]);
+		// }
+		// printf("\nyc\n");
+		// for (size_t i = 0; i < CODE_N; i++)
+		// {
+		// 	printf("%d", (yc[i] == -1)?1:0);
+		// }printf("\nsynd\n");
+		// for (size_t i = 0; i < CODE_N-CODE_K; i++)
+		// {
+		// 	printf("%d", get_element(scrambled_synd_mtx, 0, i));
+		// }
+		
 		// decode and find e
 		// In the recursive decoding procedure,
 		// Y is 1 when the received codeword is 0, o.w, -1
@@ -91,15 +109,15 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// Check Hamming weight of e'
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
 	}
-	printf("syndrome\n");
-	print_matrix_sign(synd_mtx);
+	// printf("syndrome\n");
+	// print_matrix_sign(synd_mtx);
 	// compute Qinv*e'
 	matrix *sign = new_matrix(1, CODE_N);
 	for(uint32_t i=0; i < CODE_N; i++){
 		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
-	printf("sign:\n");
-	print_matrix_sign(sign);
+	// printf("sign:\n");
+	// print_matrix_sign(sign);
 	// export message
 	// sing is (mlen, M, e, sign_i)
 	// M includes its length, i.e., mlen
@@ -115,7 +133,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	delete_matrix(Sinv);
 	delete_matrix(synd_mtx);
 	delete_matrix(scrambled_synd_mtx);
-	free(yr);
-	free(yc);
+
 	return 0;	
 }

@@ -11,12 +11,10 @@ void export_sk(unsigned char *sk, matrix *Sinv, uint16_t *Q,
 	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N, 
 								   part_perm1, sizeof(uint16_t)*CODE_N/4);
 
-	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-		+sizeof(uint16_t)*CODE_N/4, 
-								   part_perm2, sizeof(uint16_t)*(CODE_N-CODE_K));
-	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-		+(sizeof(uint16_t)*CODE_N/4)*2, 
-								   s_lead, sizeof(uint16_t)*(CODE_N-CODE_K));
+	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
+								   part_perm2, sizeof(uint16_t)*CODE_N/4);
+	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N+(sizeof(uint16_t)*CODE_N/4)*2, 
+								   s_lead, sizeof(uint16_t)*(CODE_N - CODE_K));
 }
 
 void export_pk(unsigned char *pk, matrix *H_pub){
@@ -27,18 +25,19 @@ int
 crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	matrix* G_M = new_matrix(CODE_K, CODE_N);
 
-	uint16_t* Q = (uint16_t*)malloc(sizeof(uint16_t) * CODE_N);
 	matrix* H_M = new_matrix(CODE_N - CODE_K, CODE_N);
 	matrix* H_pub = new_matrix(CODE_N - CODE_K, CODE_N);
 
 	matrix* S = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 
-	uint16_t* part_perm1 = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N/4));
-	uint16_t* part_perm2 = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N/4));
+	uint16_t Q[CODE_N];
+	
+	uint16_t part_perm1[(CODE_N/4)];
+	uint16_t part_perm2[(CODE_N/4)];
 
-	uint16_t* s_lead = (uint16_t*)malloc(sizeof(uint16_t) * (CODE_N - CODE_K));
-	uint16_t* s_diff = (uint16_t*)malloc(sizeof(uint16_t) * CODE_K);
+	uint16_t s_lead[CODE_N - CODE_K];
+	uint16_t s_diff[CODE_K];
 
 	// generate secret parital permutations
 	partial_permutation_gen(part_perm1);
@@ -53,6 +52,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	dual(G_M, H_M, 0, 0);
 	rref(H_M); 
 	get_pivot(H_M, s_lead, s_diff);
+	// printf("s_lead:\n");
+	// for (size_t i = 0; i < CODE_N - CODE_K; i++)
+	// {
+	// 	printf("%4d ", s_lead[i]);
+	// }printf("\n");
+
 	// fprintf(stderr, "pivot\n");
 
 	// Generate a Scrambling matrix and its inverse. 
@@ -66,37 +71,26 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	col_permute(H_M, 0, CODE_N-CODE_K, 0, CODE_N, Q);
 	copy_matrix(H_pub, H_M);
 	// fprintf(stderr, "Hpubgen\n");
-	// rref(H_pub); get_pivot(H_pub, p_lead, p_diff);
-	// copy_columns(Sinv, H_M, p_lead);
-	mat_mat_prod(S, H_M, H_pub);
-	// fprintf(stderr, "mat mul\n");
+	
+	// fprintf(stderr, "mat mul\n");	
+
 	export_sk(sk, Sinv, Q, part_perm1, part_perm2, s_lead);
+
+	// printf("slead_cpy:\n");
+	// for (size_t i = 0; i < CODE_N - CODE_K; i++)
+	// {
+	// 	printf("%4d ", slead_cpy[i]);
+	// }printf("\n");
+	// printf("sk: %p, pk: %p\n", sk, pk);
+	
+	mat_mat_prod(S, H_M, H_pub);
 	export_pk(pk, H_pub);
-	// fprintf(stderr, "export\n");
 
-	// fprintf(stderr, "free start\n");
 	delete_matrix(G_M);
-	// fprintf(stderr, "free G\n");
-	free(Q);
-	// fprintf(stderr, "free Q\n");
 	delete_matrix(H_M);
-	// fprintf(stderr, "free H_M\n");
 	delete_matrix(H_pub); 
-	// fprintf(stderr, "free Hpub\n");
 	delete_matrix(S);
-	// fprintf(stderr, "free S\n");
 	delete_matrix(Sinv);
-	// fprintf(stderr, "free Sinv\n");
-
-	free(part_perm1); 
-	// fprintf(stderr, "free pp1\n");
-	free(part_perm2);
-	// fprintf(stderr, "free pp2\n");
-
-	free(s_lead);
-	// fprintf(stderr, "free slead\n");
-	free(s_diff); 
-	// fprintf(stderr, "free sdiff\n");
 
 	return 0;
 }
