@@ -1,20 +1,14 @@
 #include "api.h"
 #include "common.h"
 
-void export_sk(unsigned char *sk, matrix *Sinv, uint16_t *Q, 
-	uint16_t *part_perm1, uint16_t* part_perm2, uint16_t *s_lead){
-	//export private in order: Sinv, Q, part_perm1, pert_perm2, pivot of H_M
-	export_matrix(sk        			, Sinv);
-	
-	memcpy		(sk+Sinv->alloc_size, 
-									Q, sizeof(uint16_t)*CODE_N);
-	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N, 
-								   part_perm1, sizeof(uint16_t)*CODE_N/4);
-
-	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
-								   part_perm2, sizeof(uint16_t)*CODE_N/4);
-	memcpy		(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N+(sizeof(uint16_t)*CODE_N/4)*2, 
-								   s_lead, sizeof(uint16_t)*(CODE_N - CODE_K));
+void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2){
+	//export private in order: Q, part_perm1, pert_perm2
+	memcpy		(sk, 
+					Q, sizeof(uint16_t)*CODE_N);
+	memcpy		(sk+sizeof(uint16_t)*CODE_N, 
+					part_perm1, sizeof(uint16_t)*CODE_N/4);
+	memcpy		(sk+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
+					part_perm2, sizeof(uint16_t)*CODE_N/4);
 }
 
 void export_pk(unsigned char *pk, matrix *H_pub){
@@ -27,9 +21,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 
 	matrix* H_M = new_matrix(CODE_N - CODE_K, CODE_N);
 	matrix* H_pub = new_matrix(CODE_N - CODE_K, CODE_N);
-
-	matrix* S = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
-	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 
 	uint16_t Q[CODE_N];
 	
@@ -91,7 +82,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	// fprintf(stderr, "mat mul\n");	
 
-	export_sk(sk, Sinv, Q, part_perm1, part_perm2, s_lead);
+	export_sk(sk, Q, part_perm1, part_perm2);
 
 	// printf("slead_cpy:\n");
 	// for (size_t i = 0; i < CODE_N - CODE_K; i++)
@@ -105,8 +96,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	delete_matrix(G_M);
 	delete_matrix(H_M);
 	delete_matrix(H_pub); 
-	delete_matrix(S);
-	delete_matrix(Sinv);
 
 	return 0;
 }

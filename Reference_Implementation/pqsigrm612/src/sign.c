@@ -23,17 +23,11 @@ void print_matrix_sign(matrix* mtx){
     
 }
 
-void import_sk(const unsigned char *sk, matrix *Sinv
-		, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2
-		, uint16_t **s_lead)
+void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2)
 {
-	import_matrix(Sinv, sk);
-	*Q 			= (uint16_t*)(sk+Sinv->alloc_size);
-	*part_perm1 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N);
-	*part_perm2 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-					+sizeof(uint16_t)*CODE_N/4);
-	*s_lead 	= (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-					+sizeof(uint16_t)*CODE_N/2);
+	*Q 			= (uint16_t*)(sk);
+	*part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
+	*part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
 }
 
 /*
@@ -65,9 +59,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	matrix* Sinv = new_matrix(CODE_N - CODE_K, CODE_N - CODE_K);
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
 
-	import_sk(sk, Sinv, &Q, &part_perm1, &part_perm2, &s_lead);
+	import_sk(sk, &Q, &part_perm1, &part_perm2);
 	
-	// assert(0);
 	// Do signing, decode until the a error vector wt <= w is achieved
 	
 	uint64_t sign_i;
@@ -79,25 +72,11 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	
 	init_decoding(CODE_N);
 	while(1){
-		//random number
+		// random number
 		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
 		// Find syndrome
 		hash_message((unsigned char*)synd_mtx->elem, m, mlen, sign_i);
 		y_init(yc, yr, synd_mtx, Q);
-		// printf("s_lead:\n");
-		// for (size_t i = 0; i < CODE_N - CODE_K; i++)
-		// {
-		// 	printf("%4d ", s_lead[i]);
-		// }
-		// printf("\nyc\n");
-		// for (size_t i = 0; i < CODE_N; i++)
-		// {
-		// 	printf("%d", (yc[i] == -1)?1:0);
-		// }printf("\nsynd\n");
-		// for (size_t i = 0; i < CODE_N-CODE_K; i++)
-		// {
-		// 	printf("%d", get_element(scrambled_synd_mtx, 0, i));
-		// }
 		
 		// decode and find e
 		// In the recursive decoding procedure,
@@ -129,7 +108,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 
 	*smlen = sizeof(unsigned long long) + mlen + sign->alloc_size + sizeof(unsigned long long);
 	
-	delete_matrix(Sinv);
 	delete_matrix(synd_mtx);
 
 	return 0;	
