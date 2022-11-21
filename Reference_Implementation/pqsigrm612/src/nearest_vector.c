@@ -1,8 +1,84 @@
 #include "nearest_vector.h"
 
 float *temp; 
+
+void mindist_decoding(float* y, matrix* Hrep){
+	matrix* recieved = new_matrix(1, (1<<RM_R));
+	matrix* parity = new_matrix(1, K_REP);
+
+	for (uint32_t i = 0; i < recieved->ncols; i++)
+	{
+		set_element(recieved, 0, i, (y[i]>=0)? 0: 1);
+		y[i] = (y[i]>=0)? 1.: -1.;
+	}
+
+	printf("H;\n");
+	for (uint32_t i = 0; i < Hrep->nrows; i++)
+	{
+		for (uint32_t j = 0; j < Hrep->ncols; j++)
+		{
+			printf("%d", get_element(Hrep, i, j));
+		}printf("\n");
+	}
+
+	printf("rec;\n");
+	
+	for (uint32_t j = 0; j < recieved->ncols; j++)
+	{
+		printf("%d", get_element(recieved, 0, j));
+	}printf("\n");
+
+	vec_mat_prod(parity, Hrep, recieved);
+
+	printf("parity;\n");
+	
+	for (uint32_t j = 0; j < parity->ncols; j++)
+	{
+		printf("%d", get_element(parity, 0, j));
+	}printf("\n");
+
+	uint8_t is_allzero = 1;
+	for (uint32_t i = 0; i < parity->ncols; i++)
+	{
+		if (get_element(parity, 0, i) != 0)
+		{
+			is_allzero = 0;
+		}
+	}
+	if(is_allzero){
+		printf("all zero\n");
+		delete_matrix(recieved);
+		delete_matrix(parity);
+		return;
+	}
+	
+	for (uint32_t j = 0; j < Hrep->ncols; j++)
+	{
+		uint8_t is_matched_col = 1;
+		for (uint32_t i = 0; i < Hrep->nrows; i++)
+		{
+			if (get_element(Hrep, i, j) != get_element(parity, 0, i))
+			{
+				is_matched_col = 0;
+			}
+		}
+		if (is_matched_col) // match, flip y
+		{ 
+			printf("matched at %d\n", j);
+			y[j] *= -1.;
+
+			delete_matrix(recieved);
+			delete_matrix(parity);
+
+			return;
+		}
+	}
+
+	
+}
+
 void recursive_decoding_mod(float* y, const  int r1, const int m1, 
-	const int f, const int l, uint16_t *perm1, uint16_t *perm2) {
+	const int f, const int l, uint16_t *perm1, uint16_t *perm2, matrix* Hrep) {
 	int i;
 	if (r1 == 0) {
 		//Calculate Euclidean distance
@@ -21,10 +97,18 @@ void recursive_decoding_mod(float* y, const  int r1, const int m1,
 	}
 	
 	if (r1 == m1) {
-		for ( i = f; i < l; i++) 
-			y[i] = (y[i]>=0)? 1: -1;
-		
+		// Decoding for the replaced code
+		if (r1 == RM_R)
+		{
+			mindist_decoding(y + f, Hrep);
+			return;
+		} 
+			
+		for ( i = f; i < l; i++) {
+			y[i] = (y[i]>=0)? 1.: -1.;
+		}
 		return;
+		
 	}
 	
 	if(f == 0 && l == CODE_N/4) // partial depermutation
@@ -41,13 +125,13 @@ void recursive_decoding_mod(float* y, const  int r1, const int m1,
 		y[i + (l + f) / 2] = y[i + (l + f) / 2] * y[i + f];
 	}
 
-	recursive_decoding_mod(y, r1 - 1, m1 - 1, (l + f) / 2, l, perm1, perm2);
+	recursive_decoding_mod(y, r1 - 1, m1 - 1, (l + f) / 2, l, perm1, perm2, Hrep);
 
 	for ( i = 0; i < (l - f) / 2; i++) {
 		y[f + i] = (y[f + i] + y[i + (l + f) / 2] * temp[f + i]) / 2;
 	}
 
-	recursive_decoding_mod(y, r1, m1 - 1, f, (l + f) / 2, perm1, perm2);
+	recursive_decoding_mod(y, r1, m1 - 1, f, (l + f) / 2, perm1, perm2, Hrep);
 
 	for ( i = 0; i < (l - f) / 2; i++) {
 		y[i + (l + f) / 2] = y[i + (l + f) / 2] * y[i + f];

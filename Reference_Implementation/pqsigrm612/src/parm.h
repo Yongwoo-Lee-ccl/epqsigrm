@@ -8,6 +8,8 @@
 #define RM_R 6U
 #define RM_M 12U
 
+#define K_REP 2U
+
 #define CODE_K 2510U
 #define CODE_N 4096U
 

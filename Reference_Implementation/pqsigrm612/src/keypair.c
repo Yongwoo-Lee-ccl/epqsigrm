@@ -1,7 +1,7 @@
 #include "api.h"
 #include "common.h"
 
-void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2){
+void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep){
 	//export private in order: Q, part_perm1, pert_perm2
 	memcpy		(sk, 
 					Q, sizeof(uint16_t)*CODE_N);
@@ -9,6 +9,7 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 					part_perm1, sizeof(uint16_t)*CODE_N/4);
 	memcpy		(sk+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
 					part_perm2, sizeof(uint16_t)*CODE_N/4);
+	export_matrix(sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2,	Hrep);
 }
 
 void export_pk(unsigned char *pk, matrix *Hpub){
@@ -51,6 +52,53 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
 	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, rand_codeword, 0, 0);
 
+	matrix* Grep = new_matrix(1<<RM_R - K_REP, 1<<RM_R);
+	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
+
+	uint8_t is_odd = 0;
+	do{
+		randombytes((unsigned char*)(Grep->elem), Grep->alloc_size);
+		dual(Grep, Hrep, 0, 0);
+		for (uint32_t i = 0; i < K_REP; i++)
+		{	
+			ELEMBLOCK parity = 0;
+			for (uint32_t j = 0; j < (1<<RM_R); j++)
+			{
+				parity ^= get_element(Hrep, i, j);
+			}
+			if (parity == 1){
+				is_odd = 1;
+				break;
+			}
+		}
+	}while(!is_odd);
+	printf("H;\n");
+	for (uint32_t i = 0; i < Hrep->nrows; i++)
+	{
+		for (uint32_t j = 0; j < Hrep->ncols; j++)
+		{
+			printf("%d", get_element(Hrep, i, j));
+		}printf("\n");
+	}
+
+	// rref(Hrep);
+
+	// replace the code (starting from second row)
+	for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
+	{
+		partial_replace(Gpub, K_REP, i, K_REP + Grep->nrows, i + Grep->ncols, Grep, 0, 0); 
+	}
+	// for (uint32_t i = 0; i < 2; i++)
+	// {
+	// 	for (uint32_t j = 0; j < Gpub->ncols; j++)
+	// 	{
+	// 		set_element(Gpub, i, j, 0);
+	// 	}
+		
+	// }
+	
+	
+	// Public code generation: permutation and export
 	// Generate the permutation for whole matrix
 	permutation_gen(Q, CODE_N);
 
@@ -86,7 +134,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		}		
 	}
 
-	export_sk(sk, Q, part_perm1, part_perm2);
+	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
 	// printf("sk: %p, pk: %p\n", sk, pk);
 	
 	export_pk(pk, Hpub);
@@ -96,6 +144,9 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	delete_matrix(Gpub);
 	delete_matrix(Hpub);
 	delete_matrix(Hcpy);
+
+	delete_matrix(Grep);
+	delete_matrix(Hrep);
 
 	return 0;
 }

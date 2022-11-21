@@ -23,11 +23,12 @@ void print_matrix_sign(matrix* mtx){
     
 }
 
-void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2)
+void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep)
 {
 	*Q 			= (uint16_t*)(sk);
 	*part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
 	*part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
+	import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
 /*
@@ -57,8 +58,9 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 
 	// read secret key(bit stream) into appropriate type.
 	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
+	matrix* Hrep = new_matrix(K_REP, (1<<RM_R));
 
-	import_sk(sk, &Q, &part_perm1, &part_perm2);
+	import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep);
 	
 	// Do signing, decode until the a error vector wt <= w is achieved
 	
@@ -70,6 +72,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	float yc[CODE_N], yr[CODE_N];
 	
 	init_decoding(CODE_N);
+	uint32_t iter = 0;
 	while(1){
 		// random number
 		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
@@ -80,7 +83,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// decode and find e
 		// In the recursive decoding procedure,
 		// Y is 1 when the received codeword is 0, o.w, -1
-		recursive_decoding_mod(yc, RM_R, RM_M, 0, CODE_N, part_perm1, part_perm2);
+		recursive_decoding_mod(yc, RM_R, RM_M, 0, CODE_N, part_perm1, part_perm2, Hrep);
 		
 		// Check Hamming weight of e'
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
@@ -93,8 +96,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	for(uint32_t i=0; i < CODE_N; i++){
 		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
-	// printf("sign:\n");
-	// print_matrix_sign(sign);
+	printf("sign:\n");
+	print_matrix_sign(sign);
 	// export message
 	// sing is (mlen, M, e, sign_i)
 	// M includes its length, i.e., mlen
