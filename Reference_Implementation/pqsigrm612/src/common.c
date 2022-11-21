@@ -1,22 +1,36 @@
 // common.c for pqsigRM
 #include "common.h"
 
+void SHAKE128(unsigned char *digest, const unsigned char *message, size_t message_len, size_t hashlen)
+{
+    EVP_MD_CTX *mdctx;
+    mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, EVP_shake128(), NULL);
+    EVP_DigestUpdate(mdctx, message, message_len);
+    EVP_DigestFinalXOF(mdctx, digest, hashlen);
+    EVP_MD_CTX_destroy(mdctx);
+}
+
+unsigned char* hashMsg(unsigned char* s, const unsigned char* mHi, uint64_t mlen)
+{
+    // Hash the given message, syndrome s = h(M|i)
+    // It uses SHAKE128 inside
+
+    SHAKE128(s, mHi, mlen+sizeof(uint64_t), (CODE_N - CODE_K)/8);
+
+    return s;
+}
+
+
 unsigned char* hash_message(unsigned char *s, const unsigned char *m, 
 	unsigned long long mlen, unsigned long long sign_i){
 	// Hash the given message
-	// syndrome s = h(h(M)|i) | (h(h(M)|i)) | ...
-	unsigned char* stemp = (unsigned char*)malloc(HASHSIZEBYTES*4);
+	// syndrome s = h(h(M)|i)
+	unsigned char* buffer = (unsigned char*)malloc(mlen+sizeof(uint64_t));
+	memcpy(buffer, m, mlen);
+	memcpy(buffer + mlen, (unsigned char*)(&sign_i), sizeof(unsigned long long));
+	SHAKE128(s, buffer, mlen+sizeof(uint64_t), (1 + (CODE_N - CODE_K - 1)/64)*64/8);
 
-	SHA512(m, mlen, stemp);
-	*(unsigned long long*)(stemp+HASHSIZEBYTES) = sign_i;// concatenate i i.e. h(M)|i
-	
-	SHA512(stemp, HASHSIZEBYTES+sizeof(unsigned long long), stemp); //h(h(M)|i)
-	SHA512(stemp                , HASHSIZEBYTES, stemp+HASHSIZEBYTES);//(h(h(M)|i))
-	SHA512(stemp+HASHSIZEBYTES  , HASHSIZEBYTES, stemp+HASHSIZEBYTES*2);
-	SHA512(stemp+HASHSIZEBYTES*2, HASHSIZEBYTES, stemp+HASHSIZEBYTES*3);
-	memcpy(s, stemp, 1+(CODE_N-CODE_K-1)/8);
-	
-	free(stemp);
 	return s;
 }
 
