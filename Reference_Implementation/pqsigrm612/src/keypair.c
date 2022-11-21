@@ -38,20 +38,9 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	partial_permutation_gen(part_perm2);
 	
 	// Generate a partially permute generator matrix Gm
-	rm_gen_mod(Gm, part_perm1, part_perm2);
+	rm_gen(Gm, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
 
-	// Parity check matrix of the modified RM code
-	dual(Gm, Hm, 0, 0);
-
-	// pick a random codeword from the dual code
-	matrix* rand_codeword = new_matrix(1, CODE_N);
-	uint8_t seed[1 + (Hm->nrows -  1)/8];
-	randombytes(seed, 1 + (Hm->nrows -  1)/8);
-	codeword(Hm, seed, rand_codeword);
-
-	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
-	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, rand_codeword, 0, 0);
-
+	// replace of RM(r,r)
 	matrix* Grep = new_matrix(1<<RM_R - K_REP, 1<<RM_R);
 	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
 
@@ -72,15 +61,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 			}
 		}
 	}while(!is_odd);
-	printf("H;\n");
-	for (uint32_t i = 0; i < Hrep->nrows; i++)
-	{
-		for (uint32_t j = 0; j < Hrep->ncols; j++)
-		{
-			printf("%d", get_element(Hrep, i, j));
-		}printf("\n");
-	}
-
 	// rref(Hrep);
 
 	// replace the code (starting from second row)
@@ -88,14 +68,30 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	{
 		partial_replace(Gpub, K_REP, i, K_REP + Grep->nrows, i + Grep->ncols, Grep, 0, 0); 
 	}
-	// for (uint32_t i = 0; i < 2; i++)
-	// {
-	// 	for (uint32_t j = 0; j < Gpub->ncols; j++)
-	// 	{
-	// 		set_element(Gpub, i, j, 0);
-	// 	}
-		
-	// }
+
+	// partial permutation
+	for (uint32_t i = 0; i < 4; ++i)
+	{
+		col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
+			i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
+	}
+	
+	col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
+		3*CODE_N/4, CODE_N, part_perm2);
+
+	// Parity check matrix of the modified RM code
+	dual(Gm, Hm, 0, 0);
+
+	// pick a random codeword from the dual code
+	matrix* rand_codeword = new_matrix(1, CODE_N);
+	uint8_t seed[1 + (Hm->nrows -  1)/8];
+	randombytes(seed, 1 + (Hm->nrows -  1)/8);
+	codeword(Hm, seed, rand_codeword);
+
+	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
+	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, rand_codeword, 0, 0);
+
+
 	
 	
 	// Public code generation: permutation and export
