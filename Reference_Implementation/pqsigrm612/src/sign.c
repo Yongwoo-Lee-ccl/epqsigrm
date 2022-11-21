@@ -96,8 +96,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	for(uint32_t i=0; i < CODE_N; i++){
 		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
-	printf("sign:\n");
-	print_matrix_sign(sign);
+	// printf("sign:\n");
+	// print_matrix_sign(sign);
 	// export message
 	// sing is (mlen, M, e, sign_i)
 	// M includes its length, i.e., mlen

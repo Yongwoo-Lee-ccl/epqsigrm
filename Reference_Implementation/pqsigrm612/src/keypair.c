@@ -38,25 +38,13 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	partial_permutation_gen(part_perm2);
 	
 	// Generate a partially permute generator matrix Gm
-	rm_gen_mod(Gm, part_perm1, part_perm2);
-
-	// Parity check matrix of the modified RM code
-	dual(Gm, Hm, 0, 0);
-
-	// pick a random codeword from the dual code
-	matrix* rand_codeword = new_matrix(1, CODE_N);
-	uint8_t seed[1 + (Hm->nrows -  1)/8];
-	randombytes(seed, 1 + (Hm->nrows -  1)/8);
-	codeword(Hm, seed, rand_codeword);
-
-	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
-	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, rand_codeword, 0, 0);
+	rm_gen(Gm, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
 
 	matrix* Grep = new_matrix(1<<RM_R - K_REP, 1<<RM_R);
 	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
 
 	uint8_t is_odd = 0;
-	do{
+	while(1){
 		randombytes((unsigned char*)(Grep->elem), Grep->alloc_size);
 		dual(Grep, Hrep, 0, 0);
 		for (uint32_t i = 0; i < K_REP; i++)
@@ -71,33 +59,49 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 				break;
 			}
 		}
-	}while(!is_odd);
-	printf("H;\n");
-	for (uint32_t i = 0; i < Hrep->nrows; i++)
-	{
-		for (uint32_t j = 0; j < Hrep->ncols; j++)
-		{
-			printf("%d", get_element(Hrep, i, j));
-		}printf("\n");
+		if(is_odd) break;
 	}
 
-	// rref(Hrep);
+	rref(Hrep);
 
 	// replace the code (starting from second row)
 	for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
 	{
 		partial_replace(Gpub, K_REP, i, K_REP + Grep->nrows, i + Grep->ncols, Grep, 0, 0); 
 	}
-	// for (uint32_t i = 0; i < 2; i++)
-	// {
-	// 	for (uint32_t j = 0; j < Gpub->ncols; j++)
-	// 	{
-	// 		set_element(Gpub, i, j, 0);
-	// 	}
+	
+	// Partial permutation
+	for (uint32_t i = 0; i < 4; ++i)
+	{
+		col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
+			i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
+	}
+	
+	col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
+		3*CODE_N/4, CODE_N, part_perm2);
+
+	// Parity check matrix of the modified RM code
+	dual(Gm, Hm, 0, 0);
+
+	// pick a random codeword from the dual code
+	matrix* code_from_dual = new_matrix(1, CODE_N);
+	uint8_t seed[1 + (Hm->nrows -  1)/8];
+	randombytes(seed, 1 + (Hm->nrows -  1)/8);
+	codeword(Hm, seed, code_from_dual);
+
+	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
+	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, code_from_dual, 0, 0);
+
+	// matrix* random_rows = new_matrix(K_REP, CODE_N);
+	// while(1){
+	// 	randombytes((unsigned char*)(random_rows->elem), random_rows->alloc_size);
 		
+	// 	if(hamming_weight(random_rows)%2 == 1){
+	// 		break;
+	// 	}
 	// }
-	
-	
+	// partial_replace(Gpub, 0, 0, K_REP, CODE_N, random_rows, 0, 0);
+
 	// Public code generation: permutation and export
 	// Generate the permutation for whole matrix
 	permutation_gen(Q, CODE_N);

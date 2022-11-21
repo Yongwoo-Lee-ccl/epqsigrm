@@ -21,11 +21,78 @@ unsigned char* hash_message(unsigned char *s, const unsigned char *m,
 }
 
 int hamming_weight(matrix* error){
-	int wgt=0;
-	int i=0;
-	for(i=0; i < error->ncols; i++)
-		wgt += get_element(error, 0, i);
-	return wgt;
+	assert(error->ncols % ELEMBLOCKSIZE == 0);
+
+    uint64_t wgt = 0;
+
+    for (int i = 0; i < error->words_in_row; ++i){
+        wgt += (1 & (error->elem[i]))
+            + (1 & (error->elem[i] >> 1))
+            + (1 & (error->elem[i] >> 2))
+            + (1 & (error->elem[i] >> 3))
+            + (1 & (error->elem[i] >> 4))
+            + (1 & (error->elem[i] >> 5))
+            + (1 & (error->elem[i] >> 6))
+            + (1 & (error->elem[i] >> 7))
+            + (1 & (error->elem[i] >> 8))
+            + (1 & (error->elem[i] >> 9))
+            + (1 & (error->elem[i] >> 10))
+            + (1 & (error->elem[i] >> 11))
+            + (1 & (error->elem[i] >> 12))
+            + (1 & (error->elem[i] >> 13))
+            + (1 & (error->elem[i] >> 14))
+            + (1 & (error->elem[i] >> 15))
+            + (1 & (error->elem[i] >> 16))
+            + (1 & (error->elem[i] >> 17))
+            + (1 & (error->elem[i] >> 18))
+            + (1 & (error->elem[i] >> 19))
+            + (1 & (error->elem[i] >> 20))
+            + (1 & (error->elem[i] >> 21))
+            + (1 & (error->elem[i] >> 22))
+            + (1 & (error->elem[i] >> 23))
+            + (1 & (error->elem[i] >> 24))
+            + (1 & (error->elem[i] >> 25))
+            + (1 & (error->elem[i] >> 26))
+            + (1 & (error->elem[i] >> 27))
+            + (1 & (error->elem[i] >> 28))
+            + (1 & (error->elem[i] >> 29))
+            + (1 & (error->elem[i] >> 30))
+            + (1 & (error->elem[i] >> 31))
+            + (1 & (error->elem[i] >> 32))
+            + (1 & (error->elem[i] >> 33))
+            + (1 & (error->elem[i] >> 34))
+            + (1 & (error->elem[i] >> 35))
+            + (1 & (error->elem[i] >> 36))
+            + (1 & (error->elem[i] >> 37))
+            + (1 & (error->elem[i] >> 38))
+            + (1 & (error->elem[i] >> 39))
+            + (1 & (error->elem[i] >> 40))
+            + (1 & (error->elem[i] >> 41))
+            + (1 & (error->elem[i] >> 42))
+            + (1 & (error->elem[i] >> 43))
+            + (1 & (error->elem[i] >> 44))
+            + (1 & (error->elem[i] >> 45))
+            + (1 & (error->elem[i] >> 46))
+            + (1 & (error->elem[i] >> 47))
+            + (1 & (error->elem[i] >> 48))
+            + (1 & (error->elem[i] >> 49))
+            + (1 & (error->elem[i] >> 50))
+            + (1 & (error->elem[i] >> 51))
+            + (1 & (error->elem[i] >> 52))
+            + (1 & (error->elem[i] >> 53))
+            + (1 & (error->elem[i] >> 54))
+            + (1 & (error->elem[i] >> 55))
+            + (1 & (error->elem[i] >> 56))
+            + (1 & (error->elem[i] >> 57))
+            + (1 & (error->elem[i] >> 58))
+            + (1 & (error->elem[i] >> 59))
+            + (1 & (error->elem[i] >> 60))
+            + (1 & (error->elem[i] >> 61))
+            + (1 & (error->elem[i] >> 62))
+            + (1 & (error->elem[i] >> 63));
+    }
+
+    return wgt;
 }
 
 void swap16(uint16_t *Q, const int i, const int j){

@@ -12,30 +12,7 @@ void mindist_decoding(float* y, matrix* Hrep){
 		y[i] = (y[i]>=0)? 1.: -1.;
 	}
 
-	printf("H;\n");
-	for (uint32_t i = 0; i < Hrep->nrows; i++)
-	{
-		for (uint32_t j = 0; j < Hrep->ncols; j++)
-		{
-			printf("%d", get_element(Hrep, i, j));
-		}printf("\n");
-	}
-
-	printf("rec;\n");
-	
-	for (uint32_t j = 0; j < recieved->ncols; j++)
-	{
-		printf("%d", get_element(recieved, 0, j));
-	}printf("\n");
-
 	vec_mat_prod(parity, Hrep, recieved);
-
-	printf("parity;\n");
-	
-	for (uint32_t j = 0; j < parity->ncols; j++)
-	{
-		printf("%d", get_element(parity, 0, j));
-	}printf("\n");
 
 	uint8_t is_allzero = 1;
 	for (uint32_t i = 0; i < parity->ncols; i++)
@@ -46,7 +23,6 @@ void mindist_decoding(float* y, matrix* Hrep){
 		}
 	}
 	if(is_allzero){
-		printf("all zero\n");
 		delete_matrix(recieved);
 		delete_matrix(parity);
 		return;
@@ -64,12 +40,10 @@ void mindist_decoding(float* y, matrix* Hrep){
 		}
 		if (is_matched_col) // match, flip y
 		{ 
-			printf("matched at %d\n", j);
 			y[j] *= -1.;
 
 			delete_matrix(recieved);
 			delete_matrix(parity);
-
 			return;
 		}
 	}

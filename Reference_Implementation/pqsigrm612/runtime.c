@@ -47,7 +47,7 @@ main()
     
     // Generate the public/private keypair
     long long tic, toc;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 30; i++)
     {
         mlen = 33*(i+1);
         m = (unsigned char *)calloc(mlen, sizeof(unsigned char));

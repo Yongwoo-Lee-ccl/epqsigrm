@@ -32,19 +32,3 @@ matrix* rm_gen(matrix* gen, int r, int m, uint16_t row_f, uint16_t row_r, uint16
 	}
 	return gen;
 }
-
-matrix* rm_gen_mod(matrix* gen, uint16_t *part_perm1, uint16_t *part_perm2) {
-
-	rm_gen(gen, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
-
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		col_permute(gen, 0, rm_dim[RM_R][RM_M -2], 
-			i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
-	}
-	
-	col_permute(gen, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
-		3*CODE_N/4, CODE_N, part_perm2);
-	
-	return gen;
-}
