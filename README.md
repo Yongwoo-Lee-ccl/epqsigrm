@@ -1,6 +1,7 @@
 pqsigRM v1.11
 ========
 # PRINCIPAL SUBMITTERS
+- Jinkyu Cho, Seoul National University
 - Wijik Lee, Seoul National University
 - Young-Sik Kim, Chosun University
 - Yong-Woo Lee, Seoul National University
