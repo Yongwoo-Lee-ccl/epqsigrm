@@ -7,45 +7,69 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
   A = (matrix*) malloc (sizeof (matrix));
   A->ncols = ncols;
   A->nrows = nrows;  
-  A->words_in_row = (1 + (ncols - 1) / ELEMBLOCKSIZE);
-  A->alloc_size = nrows * A->words_in_row * sizeof(ELEMBLOCK);
-  A->elem = (ELEMBLOCK*)malloc(A->alloc_size);
+  A->elem = (unsigned char**)malloc(nrows);
+  for (size_t i = 0; i < nrows; i++)
+  {
+	A->elem = (unsigned char*)malloc(ncols);
+  }
+  
   init_zero(A);
   return A;
 }
 
-void delete_matrix(matrix* A)
-{
-	// fprintf(stderr, "elem pointer %p\n", A->elem);	
-	free(A->elem);
-	// fprintf(stderr, "free elem\n");
-	free(A);
-	// fprintf(stderr, "free A\n");
+void init_zero(matrix *A){
+	for (size_t i = 0; i < A->nrows; i++)
+	{
+		for (size_t j = 0; j < A->ncols; j++)
+		{
+			A->elem[i][j] = 0;
+		}
+	}
 }
 
-// internal method
-void row_addition_internal(matrix* A, int dest_row_idx, int adding_row_idx){
-	for(uint32_t col_idx=0; col_idx < A->words_in_row; ++col_idx){
-		A->elem[dest_row_idx * A->words_in_row + col_idx] 
-			^= A->elem[adding_row_idx * A->words_in_row + col_idx];
-	}
+void delete_matrix(matrix* A)
+{
+	free(A->elem);
+	free(A);
 }
 
 matrix* copy_matrix(matrix* dest, matrix* src){
 	assert(dest->nrows == src->nrows && dest->ncols == src->ncols);
 	
-	memcpy(dest->elem, src->elem, src->alloc_size);
+	for (size_t i = 0; i < src->nrows; i++)
+	{
+		memcpy(dest->elem[i], src->elem[i], src->ncols);
+	}
+	
 	return dest;
 }
 
 // Exports a matrix into unsigned char destination.
-int export_matrix(unsigned char* dest, matrix* src_mtx){
-	memcpy(dest, src_mtx->elem, src_mtx->alloc_size);
-	return src_mtx->alloc_size;
+void export_matrix(unsigned char* dest, matrix* src){
+	for (size_t i = 0; i < src->nrows; i++)
+	{
+		for (size_t j = 0; j < src->ncols; j+=8)
+		{
+			unsigned char block = 0;
+			block += src->elem[i][j] << 7;
+			block += src->elem[i][j+1] << 6;
+			block += src->elem[i][j+2] << 5;
+			block += src->elem[i][j+3] << 4;
+			block += src->elem[i][j+4] << 3;
+			block += src->elem[i][j+5] << 2;
+			block += src->elem[i][j+6] << 1;
+			block += src->elem[i][j+7];
+
+			*dest = block;
+			dest++;
+		}
+		
+	}
+	
 }
 
 matrix* import_matrix(matrix* dest_mtx, const unsigned char* src){
-	memcpy(dest_mtx->elem, src, dest_mtx->alloc_size);
+	// memcpy(dest_mtx->elem, src, dest_mtx->alloc_size);
 
 	return dest_mtx;
 }
@@ -220,37 +244,16 @@ void mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
 void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
 	uint64_t bit = 0;
 	uint64_t offset;
-	uint32_t row, col_word;
-	for(row = 0; row < m->nrows; row++){
+	for(size_t i = 0; i < m->nrows; i++){
 		bit = 0;
 		//assume all zero bit in unnecessary position
-		for(col_word = 0; col_word < m->words_in_row; col_word++){
-			bit ^= m->elem[(m->words_in_row)*row + col_word] & vec->elem[col_word];
+		for (size_t j = 0; j < m->ncols; j++)
+		{
+			bit += m->elem[i][j] * vec->elem[0][j];
 		}
 		
-		// for(col=0; col < m->words_in_row - 1; col++)
-		// 	bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
-	
-		// offset = 0xffffffffffffffffUL << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
-		// bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col]) & offset;
-		// printf("bit: \n");
-		// for (size_t i = 0; i < 64; i++)
-		// {	
-		// 	if(i % 4 == 0){
-		// 		printf(" ");
-		// 	}
-		// 	printf("%d", (bit >> (ELEMBLOCKSIZE - 1 - i)) & (uint64_t)1);
-		// }printf("\n32\n");
-
-		bit ^= (bit >> 32);
-		bit ^= (bit >> 16);
-		bit ^= (bit >> 8);
-		bit ^= (bit >> 4);
-		bit ^= (bit >> 2);
-		bit ^= (bit >> 1);
-		bit &= (uint64_t)1;
 		
-		set_element(dest, 0, row, bit);
+		set_element(dest, 0, i, bit);
 	}
 }
 
@@ -258,9 +261,15 @@ int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
 	if((m1->nrows != m2->nrows) || (m1->ncols != m2->ncols))
 		return -1;
 	
-	for(int i =0; i< res->alloc_size; i++)
-		res->elem[i] = (m1->elem[i])^(m2->elem[i]);
-
+	for (size_t i = 0; i < res->nrows; i++)
+	{
+		for (size_t j = 0; j < res->ncols; j++)
+		{
+			res->elem[i][j] = m1->elem[i][j] ^ m2->elem[i][j];
+		}
+		
+	}
+	
 	return 0;
 }
 
@@ -290,14 +299,15 @@ void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff){
 	}
 }
 
-void row_interchange(matrix* A, uint32_t row_idx1, uint32_t row_idx2){
-	uint32_t col_idx;
-	uint64_t temp;
-	for(col_idx=0; col_idx<A->words_in_row; ++col_idx){
-		temp 	 								= A->elem[row_idx1 * A->words_in_row + col_idx];
-		A->elem[row_idx1 * A->words_in_row + col_idx] = A->elem[row_idx2 * A->words_in_row + col_idx];
-		A->elem[row_idx2 * A->words_in_row + col_idx] = temp;
+void row_interchange(matrix* A, uint32_t r1, uint32_t r2){
+	unsigned char temp;
+	for (size_t c = 0; c < A->ncols; c++)
+	{
+		temp = A->elem[r1][c];
+		A->elem[r1][c] = A->elem[r2][c];
+		A->elem[r2][c] = temp;
 	}
+	
 }
 
 void partial_replace(matrix* dest, const uint32_t r1, const uint32_t c1,const uint32_t r2, const uint32_t c2, matrix* src, const int r3, const int c3){
@@ -314,9 +324,9 @@ void codeword(matrix* src, uint8_t* seed, matrix* dest){
 
 		if (bit == 1)
 		{
-			for (uint32_t j = 0; j < src->words_in_row; j++)
+			for (uint32_t j = 0; j < src->ncols; j++)
 			{
-				dest->elem[j] ^= src->elem[src->words_in_row * i + j];
+				dest->elem[0][j] ^= src->elem[i][j];
 			}
 			
 		}

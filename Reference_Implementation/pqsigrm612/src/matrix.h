@@ -8,30 +8,25 @@
 #include <assert.h>
 
 #define MATRIX_NULL 0 
-#define ELEMBLOCK uint64_t
-#define ELEMBLOCKSIZE 64
 
 #define INV_SUCCESS 1
 #define INV_FAIL 0
 
-#define get_element(A, i, j) 		(!!((A)->elem[(i) * (A)->words_in_row + (j) / ELEMBLOCKSIZE] & ((0x8000000000000000UL) >> ((j) % ELEMBLOCKSIZE))))
-#define flip_element(A, i, j) 	((A)->elem[(i) * (A)->words_in_row + (j) / ELEMBLOCKSIZE] ^= ((0x8000000000000000UL) >> ((j) % ELEMBLOCKSIZE)))
-#define set_element(A, i, j, val) 	((get_element((A), (i), (j)) == (val))? 0 : flip_element((A), (i),(j)))
-#define init_zero(R) 			memset((R)->elem, 0, (R)->alloc_size)
+#define get_element(A, i, j)  ((A->elem)[(i)][(j)])
+#define set_element(A, i, j, val) 	 ((A->elem)[(i)][(j)] = val)
 
 typedef struct {
    uint32_t nrows;//number of rows.
    uint32_t ncols;//number of columns.
-   uint32_t words_in_row;//number of words in a row
-   uint32_t alloc_size;//number of allocated bytes
-   ELEMBLOCK* elem;//row index.
+   unsigned char** elem;//row index.
 } matrix;
 
 matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;
-void delete_matrix(matrix * mtx) ;
+void init_zero(matrix *mtx);
+void delete_matrix(matrix *mtx) ;
 
 matrix* copy_matrix(matrix* dest, matrix* src);
-int export_matrix(unsigned char* dest, matrix* mtx);
+void export_matrix(unsigned char* dest, matrix* mtx);
 matrix* import_matrix(matrix* dest_mtx, const unsigned char* src);
 
 matrix* rref(matrix* mtx);
