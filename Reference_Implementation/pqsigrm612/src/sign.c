@@ -63,10 +63,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep);
 	
 	// Do signing, decode until the a error vector wt <= w is achieved
-	
 	uint64_t sign_i;
-
-	// unsigned char sign[CODE_N];
 	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K - 1);
 
 	float yc[CODE_N], yr[CODE_N];
@@ -89,15 +86,12 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		if(wgt(yr, yc) <= WEIGHT_PUB) break;
 	}
 
-	// printf("syndrome\n");
-	// print_matrix_sign(synd_mtx);
 	// compute Qinv*e'
 	matrix *sign = new_matrix(1, CODE_N);
 	for(uint32_t i=0; i < CODE_N; i++){
 		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
 	}
-	// printf("sign:\n");
-	// print_matrix_sign(sign);
+	
 	// export message
 	// sing is (mlen, M, e, sign_i)
 	// M includes its length, i.e., mlen
