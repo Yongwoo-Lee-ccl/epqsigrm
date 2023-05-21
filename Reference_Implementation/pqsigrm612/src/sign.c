@@ -35,20 +35,20 @@ void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uin
 * yr and yc are equal at the end.
 */
 void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *Q){
-		for(uint32_t i=0; i < CODE_N - CODE_K - 1; i++) {
-			yc[i] = (get_element(syndrome, 0, i) == 0)? 1.:-1.;
-		}
-		for(uint32_t i=CODE_N-CODE_K - 1; i < CODE_N; i++) {
-			yc[i] = 1.;
-		}
+	for(uint32_t i=0; i < syndrome->ncols; i++) {
+		uint8_t bit = get_element(syndrome, 0, i);
+		yc[i] = (bit == 0)? 1.:-1.;
+	}
+	for(uint32_t i = syndrome->ncols; i < CODE_N; i++) {
+		yc[i] = 1.;
+	}
 
-		// yr first, yc next
-		for(uint32_t i =0; i < CODE_N; i++) {
-			yr[Q[i]] = yc[i];
-		}
-		for(uint32_t i =0; i < CODE_N; i++) {
-			yc[i] = yr[i];
-		}
+	for(uint32_t i =0; i < CODE_N; i++) {
+		yr[Q[i]] = yc[i];
+	}
+	for(uint32_t i =0; i < CODE_N; i++) {
+		yc[i] = yr[i];
+	}
 }
 
 int
@@ -66,15 +66,19 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	uint64_t sign_i;
 	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K - 1);
 
-	float yc[CODE_N], yr[CODE_N];
+	float yc[CODE_N];
+	float yr[CODE_N];
 	
 	init_decoding(CODE_N);
 	uint32_t iter = 0;
+	uint8_t randstr[synd_mtx->ncols/8];
+
 	while(1){
 		// random number
 		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
 		// Find syndrome
-		hash_message((unsigned char*)synd_mtx->elem, m, mlen, sign_i);
+		hash_message(randstr, m, mlen, sign_i);
+		randomize(synd_mtx, randstr);
 		y_init(yc, yr, synd_mtx, Q);
 		
 		// decode and find e
@@ -93,7 +97,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	}
 	
 	// export message
-	// sing is (mlen, M, e, sign_i)
+	// sign is (mlen, M, e, sign_i)
 	// M includes its length, i.e., mlen
 	*(unsigned long long*)sm = mlen;
 	memcpy(sm+sizeof(unsigned long long), m, mlen);

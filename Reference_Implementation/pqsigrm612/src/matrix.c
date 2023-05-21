@@ -2,19 +2,17 @@
 
 matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 {
-  matrix* mat;
-
-  mat = (matrix*) malloc (sizeof (matrix));
-  mat->ncols = ncols;
-  mat->nrows = nrows;  
-  mat->elem = (uint8_t**)malloc(nrows * sizeof(uint8_t*));
-  for (uint32_t i = 0; i < nrows; i++)
-  {
-    mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
-  }
-  
-  init_zero(mat);
-  return mat;
+    matrix* mat;
+    mat = (matrix*) malloc (sizeof (matrix));
+    mat->nrows = nrows; 
+    mat->ncols = ncols;
+    mat->elem = (uint8_t**)malloc(nrows * sizeof(uint8_t*));
+    for (uint32_t i = 0; i < nrows; i++)
+    {
+        mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
+    }
+    init_zero(mat);
+    return mat;
 }
 
 
@@ -277,8 +275,8 @@ void mat_mat_prod(matrix* self, matrix* mtx1, matrix* mtx2) {
 // assume vector is transposed
 // self is also transposed
 void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
-    assert(mat->nrows == vec->nrows);
-    assert(self->ncols == vec->nrows);
+    assert(mat->ncols == vec->ncols);
+    assert(self->ncols == mat->nrows);
 
     for(uint32_t i = 0; i < mat->nrows; i++){
         uint8_t bit = 0;
