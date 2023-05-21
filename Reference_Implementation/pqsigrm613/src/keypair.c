@@ -61,7 +61,8 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	// Parity check matrix of the modified RM code
 	dual(G_M, H_M, 0, 0);
-	rref(H_M); get_pivot(H_M, s_lead, s_diff);
+	rref(H_M); 
+	get_pivot(H_M, s_lead, s_diff);
 
 	// Generate a Scrambling matrix and its inverse. 
 	do{

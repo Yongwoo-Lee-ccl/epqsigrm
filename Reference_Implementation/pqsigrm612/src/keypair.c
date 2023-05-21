@@ -9,11 +9,11 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 					part_perm1, sizeof(uint16_t)*CODE_N/4);
 	memcpy		(sk+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
 					part_perm2, sizeof(uint16_t)*CODE_N/4);
-	export_matrix(sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2,	Hrep);
+	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
 void export_pk(unsigned char *pk, matrix *Hpub){
-	export_matrix(pk, Hpub);
+	export_matrix(Hpub, pk);
 }
 
 int
@@ -41,17 +41,22 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	rm_gen(Gm, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
 
 	// replace of RM(r,r)
-	matrix* Grep = new_matrix(1<<RM_R - K_REP, 1<<RM_R);
+	matrix* Grep = new_matrix((1<<RM_R) - K_REP, (1<<RM_R));
 	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
 
 	uint8_t is_odd = 0;
+	uint8_t randstr[Grep->ncols * Grep->nrows/8];
+
+	// check if Hrep has a odd row.
 	while(1){
-		randombytes((unsigned char*)(Grep->elem), Grep->alloc_size);
-		dual(Grep, Hrep, 0, 0);
-		for (uint32_t i = 0; i < K_REP; i++)
+		randombytes(randstr, Grep->ncols * Grep->nrows/8);
+		randomize(Grep, randstr);
+		
+		dual(Grep, Hrep);
+		for (uint32_t i = 0; i < Hrep->nrows; i++)
 		{	
-			ELEMBLOCK parity = 0;
-			for (uint32_t j = 0; j < (1<<RM_R); j++)
+			uint8_t parity = 0;
+			for (uint32_t j = 0; j < Hrep->ncols; j++)
 			{
 				parity ^= get_element(Hrep, i, j);
 			}
@@ -62,13 +67,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		}
 		if(is_odd) break;
 	}
-
 	rref(Hrep);
 
 	// replace the code (starting from second row)
 	for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
 	{
-		partial_replace(Gpub, K_REP, i, K_REP + Grep->nrows, i + Grep->ncols, Grep, 0, 0); 
+		partial_replace(Gpub, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
 	}
 	
 	// Partial permutation
@@ -82,35 +86,22 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		3*CODE_N/4, CODE_N, part_perm2);
 
 	// Parity check matrix of the modified RM code
-	dual(Gm, Hm, 0, 0);
+	dual(Gm, Hm);
 
 	// pick a random codeword from the dual code
 	matrix* code_from_dual = new_matrix(1, CODE_N);
-	uint8_t seed[1 + (Hm->nrows -  1)/8];
-	randombytes(seed, 1 + (Hm->nrows -  1)/8);
+	uint8_t seed[(Hm->nrows + 7)/8];
+	randombytes(seed, (Hm->nrows + 7)/8);
 	codeword(Hm, seed, code_from_dual);
 
-	memcpy(Gpub->elem, Gm->elem, Gm->alloc_size);
-	partial_replace(Gpub, CODE_K, 0, CODE_K + 1, CODE_N, code_from_dual, 0, 0);
-
-	// matrix* random_rows = new_matrix(K_REP, CODE_N);
-	// while(1){
-	// 	randombytes((unsigned char*)(random_rows->elem), random_rows->alloc_size);
-		
-	// 	if(hamming_weight(random_rows)%2 == 1){
-	// 		break;
-	// 	}
-	// }
-	// partial_replace(Gpub, 0, 0, K_REP, CODE_N, random_rows, 0, 0);
-
-	// Public code generation: permutation and export
-	// Generate the permutation for whole matrix
+	copy_matrix(Gpub, Gm);
+	partial_replace(Gpub, CODE_K, CODE_K + 1, 0, CODE_N, code_from_dual, 0, 0);
 	permutation_gen(Q, CODE_N);
 
 	// Generate the dual code of Gm and the public key
-	dual(Gpub, Hpub, 0, 0);
+	dual(Gpub, Hpub);
 	matrix* Hcpy = new_matrix(Hpub->nrows, Hpub->ncols); 
-	memcpy(Hcpy->elem, Hpub->elem, Hpub->alloc_size);
+	copy_matrix(Hcpy, Hpub);
 
 	col_permute(Hcpy, 0, Hcpy->nrows, 0, Hcpy->ncols, Q);
 	rref(Hcpy);
@@ -135,12 +126,11 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	for (uint32_t i = 0; i < Hpub->nrows; i++)
 	{
 		if(get_element(Hpub, i, i) != 1){
-			printf("not identity!, %d, %d, %d\n", i, i, get_element(Hm, i, i));
+			printf("not identity!, %d, %d, %d\n", i, i, get_element(Hpub, i, i));
 		}		
 	}
 
 	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
-	// printf("sk: %p, pk: %p\n", sk, pk);
 	
 	export_pk(pk, Hpub);
 
@@ -148,10 +138,10 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	delete_matrix(Hm);
 	delete_matrix(Gpub);
 	delete_matrix(Hpub);
-	delete_matrix(Hcpy);
-
 	delete_matrix(Grep);
 	delete_matrix(Hrep);
+	delete_matrix(code_from_dual);
+	delete_matrix(Hcpy);
 
 	return 0;
 }

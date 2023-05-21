@@ -78,14 +78,17 @@ uint16_t random16(uint16_t n){
 	return r%n;
 }
 
-void col_permute(matrix* m, const int rf, const int rr, const int cf, 
-	const int cr, uint16_t* Q)
+void col_permute(matrix* m, const int r1, const int r2
+	, const int c1, const int c2, uint16_t* Q)
 {
-    unsigned char temp;
-	for(uint32_t c = cf; c < cr; c++){
-		for(uint32_t r = rf; r < rr; r++){
-            temp =  get_element(m, r, cf + Q[c-cf]);
-			set_element(m, r, c, temp);
+    uint8_t bit1, bit2;
+	for(uint32_t c = c1; c < c2; c++){
+		uint32_t c_permute = c1 + Q[c-c1];
+		for(uint32_t r = r1; r < r2; r++){
+            bit1 =  get_element(m, r, c);
+			bit2 =  get_element(m, r, c_permute);
+			set_element(m, r, c, bit2);
+			set_element(m, r, c_permute, bit1);
 		}
 	}
 }

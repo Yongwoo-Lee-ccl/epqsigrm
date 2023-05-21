@@ -2,8 +2,7 @@
 #include "common.h"
 
 void import_signed_msg(matrix *errorMtx, uint64_t *sign_i, const unsigned char *sm){
-	import_matrix(errorMtx, sm);
-	*sign_i = *((uint64_t*)(sm+errorMtx->alloc_size));
+	
 }
 
 

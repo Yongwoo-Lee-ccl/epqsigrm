@@ -98,13 +98,15 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	*(unsigned long long*)sm = mlen;
 	memcpy(sm+sizeof(unsigned long long), m, mlen);
 
-	memcpy(sm+sizeof(unsigned long long)+mlen, sign->elem, sign->alloc_size);
-	*(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->alloc_size) 
+	export_matrix(sign, sm+sizeof(unsigned long long)+mlen);
+	*(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8) 
 		= sign_i;
 
-	*smlen = sizeof(unsigned long long) + mlen + sign->alloc_size + sizeof(unsigned long long);
+	*smlen = sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8 + sizeof(unsigned long long);
 	
+	delete_matrix(Hrep);
 	delete_matrix(synd_mtx);
+	delete_matrix(sign);
 
 	return 0;	
 }
