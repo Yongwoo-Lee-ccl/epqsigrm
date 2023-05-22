@@ -80,17 +80,25 @@ uint16_t random16(uint16_t n){
 
 void col_permute(matrix* m, const int r1, const int r2
 	, const int c1, const int c2, uint16_t* Q)
-{
-    uint8_t bit1, bit2;
-	for(uint32_t c = c1; c < c2; c++){
-		uint32_t c_permute = c1 + Q[c-c1];
-		for(uint32_t r = r1; r < r2; r++){
-            bit1 =  get_element(m, r, c);
-			bit2 =  get_element(m, r, c_permute);
-			set_element(m, r, c, bit2);
-			set_element(m, r, c_permute, bit1);
+{	
+	matrix* copy = new_matrix(r2 - r1, c2 - c1);
+	for (uint32_t r = 0; r < r2 - r1; r++)
+	{
+		for (uint32_t c = 0; c < c2 - c1; c++)
+		{
+			uint8_t bit = get_element(m, r1 + r, c1 + c);
+			set_element(copy, r, c, bit);
 		}
 	}
+	
+	for(uint32_t c = 0; c < c2 - c1; c++){
+		for(uint32_t r = 0; r < r2 - r1; r++){
+            uint8_t bit =  get_element(copy, r, Q[c]);
+			set_element(m, r1 + r, c1 + c, bit);
+		}
+	}
+
+	delete_matrix(copy);
 }
 
 

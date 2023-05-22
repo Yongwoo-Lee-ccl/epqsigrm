@@ -78,10 +78,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	}
 	rref(Hrep);
 
+	// TODO: two random rows 
+
 	// replace the code (starting from second row)
 	for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
 	{
-		partial_replace(Gpub, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
+		partial_replace(Gm, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
 	}
 	
 	// Partial permutation
@@ -99,9 +101,18 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 
 	// pick a random codeword from the dual code
 	matrix* code_from_dual = new_matrix(1, CODE_N);
+	matrix* syndrome = new_matrix(1, CODE_K);
 	uint8_t seed[(Hm->nrows + 7)/8];
-	randombytes(seed, (Hm->nrows + 7)/8);
-	codeword(Hm, seed, code_from_dual);
+	while(1){
+		randombytes(seed, (Hm->nrows + 7)/8);
+		codeword(Hm, seed, code_from_dual);
+		
+		vec_mat_prod(syndrome, Hm, code_from_dual);
+		if(! is_zero(syndrome)){
+			break;
+		}
+	}
+	delete_matrix(syndrome);
 
 	copy_matrix(Gpub, Gm);
 	partial_replace(Gpub, CODE_K, CODE_K + 1, 0, CODE_N, code_from_dual, 0, 0);
@@ -130,6 +141,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 	rref(Hpub);
+	printf("rank: %d / %d\n", rank(Hpub), Hpub->nrows);
 
 	// DEBUG
 	for (uint32_t i = 0; i < Hpub->nrows; i++)

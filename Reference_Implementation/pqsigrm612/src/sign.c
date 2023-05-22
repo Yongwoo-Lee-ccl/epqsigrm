@@ -112,7 +112,48 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     for(uint32_t i=0; i < CODE_N; i++){
         set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
     }
-    
+
+    {// Decoding: verification
+        // generate RM code
+        matrix* Gm = new_matrix(CODE_K, CODE_N);
+        rm_gen(Gm, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
+
+        // partial replacement
+        matrix* Grep = new_matrix((1<<RM_R) - K_REP, (1<<RM_R));
+        dual(Hrep, Grep);
+        for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
+        {
+            partial_replace(Gm, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
+        }
+
+        // partial permutation
+        for (uint32_t i = 0; i < 4; ++i)
+        {
+            col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
+                i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
+        }
+        col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
+            3*CODE_N/4, CODE_N, part_perm2);
+
+        // find dual 
+        // don't add a codeword from dual
+        matrix* Hm = new_matrix(CODE_N-CODE_K, CODE_N);
+        dual(Gm, Hm);
+
+        // a codeword
+        matrix* codeword = new_matrix(1, CODE_N);
+        for(size_t i = 0; i < codeword->ncols; i++){
+            set_element(codeword, 0, i, (yc[i] >= 0)?0 : 1);
+        }
+
+        // do multiplication
+        matrix* syndrome = new_matrix(1, Hm->nrows);
+        vec_mat_prod(syndrome, Hm, codeword);
+        
+        uint8_t res = is_zero(syndrome);
+        printf("is decoding ok?: %d\n", res);
+    }// Decoding: verification
+
     // export message
     // sign is (mlen, M, e, sign_i)
     // M includes its length, i.e., mlen

@@ -16,9 +16,9 @@
 #define set_element(A, i, j, val) ((A->elem)[(i)][(j)] = (val))
 
 typedef struct {
-    uint16_t nrows;//number of rows.
-    uint16_t ncols;//number of columns.
-    uint8_t** elem;//row index.
+    uint16_t nrows;// number of rows.
+    uint16_t ncols;// number of columns.
+    uint8_t** elem;// elements.
 } matrix;
 
 matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;
@@ -48,5 +48,8 @@ void partial_replace(matrix* self, const uint32_t r1, const uint32_t c1,
         matrix* src, const int r3, const int c3);
 
 void codeword(matrix* self, uint8_t* seed, matrix* dest);
+uint8_t is_zero(matrix* self);
+
+uint16_t rank(const matrix* self);
 
 #endif

@@ -130,7 +130,7 @@ matrix* rref(matrix* self)
         }
                 
         // By adding <succ_row_idx> th row in the other nrows 
-        // s.t. A(i, <succ_row_idx>) == 1,
+        // s.t. self(i, <succ_row_idx>) == 1,
         // making previous columns as element row.
         for(uint32_t i = 0; i < self->nrows; ++i){
             if(i == succ_row_idx) continue;
@@ -141,7 +141,7 @@ matrix* rref(matrix* self)
         }
         row_idx = ++succ_row_idx;
     }
-    //Gaussian elimination is finished. So return A.
+    //Gaussian elimination is finished. So return self.
     return self;
 }
 
@@ -326,15 +326,10 @@ void dual(matrix* self, matrix* dual_sys){
             set_element(dual_sys, row, lead_diff[row], 1);    
 }
 
-void row_interchange(matrix* self, uint32_t r1, uint32_t r2){
-    uint8_t temp;
-    for (uint32_t c = 0; c < self->ncols; c++)
-    {
-        temp = self->elem[r1][c];
-        self->elem[r1][c] = self->elem[r2][c];
-        self->elem[r2][c] = temp;
-    }
-    
+void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
+    uint8_t* temp = self->elem[row1];
+    self->elem[row1] = self->elem[row2];
+    self->elem[row2] = temp;
 }
 
 void partial_replace(matrix* self, const uint32_t r1, const uint32_t r2,
@@ -357,10 +352,64 @@ void codeword(matrix* self, uint8_t* seed, matrix* dest){
             {
                 dest->elem[0][j] ^= self->elem[i][j];
             }
-            
         }
-        
     }
-    
-    
+}
+
+uint8_t is_zero(matrix* self){
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        for (size_t j = 0; j < self->ncols; j++)
+        {
+            if(get_element(self, i, j) != 0){
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+// Function to perform Gaussian elimination
+uint16_t rank(const matrix* self) {
+    matrix* copy = new_matrix(self->nrows, self->ncols);
+    for (uint16_t i = 0; i < self->nrows; ++i) {
+        for (uint16_t j = 0; j < self->ncols; ++j) {
+            set_element(copy, i, j, get_element(self, i, j));
+        }
+    }
+
+    uint16_t rank = 0;  // Initialize rank as 0
+
+    for (uint16_t r = 0; r < copy->nrows; ++r) {
+        uint16_t lead = 0;  // Current leading column
+
+        while (lead < copy->ncols) {
+            uint16_t i = r;
+
+            while (i < copy->nrows && get_element(copy, i, lead) == 0) {
+                ++i;
+            }
+
+            if (i < copy->nrows) {
+                row_interchange(copy, r, i);
+
+                for (uint16_t j = r + 1; j < copy->nrows; ++j) {
+                    if (get_element(copy, j, lead) != 0) {
+                        for (uint16_t k = lead; k < copy->ncols; ++k) {
+                            set_element(copy, j, k, get_element(copy, j, k) ^ get_element(copy, r, k));
+                        }
+                    }
+                }
+
+                ++rank;
+                break;
+            }
+
+            ++lead;
+        }
+    }
+
+    delete_matrix(copy);
+
+    return rank;
 }
