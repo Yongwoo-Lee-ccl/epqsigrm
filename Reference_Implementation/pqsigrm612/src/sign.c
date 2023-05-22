@@ -2,6 +2,24 @@
 #include "common.h"
 #include "nearest_vector.h"
 
+char* convertToHexString(const unsigned char* array, size_t length) {
+    char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
+
+    if (hexString == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < length; ++i) {
+        sprintf(hexString + (i * 2), "%02X", array[i]);  // Convert each byte to a 2-digit hexadecimal number
+    }
+
+    hexString[length * 2] = '\0';  // Null-terminate the string
+
+    return hexString;
+}
+
+
 int wgt(float *yc, float *yr)
 {
 	int i, w=0;
@@ -77,6 +95,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 		// random number
 		randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
 		// Find syndrome
+		printf("%s\nmlen: %llu\n sign_i: %lu\n", convertToHexString(m, mlen), mlen, sign_i);
 		hash_message(randstr, m, mlen, sign_i);
 		randomize(synd_mtx, randstr);
 		y_init(yc, yr, synd_mtx, Q);
@@ -93,7 +112,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	// compute Qinv*e'
 	matrix *sign = new_matrix(1, CODE_N);
 	for(uint32_t i=0; i < CODE_N; i++){
-		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
+		set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
 	}
 	
 	// export message
@@ -101,7 +120,6 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 	// M includes its length, i.e., mlen
 	*(unsigned long long*)sm = mlen;
 	memcpy(sm+sizeof(unsigned long long), m, mlen);
-
 	export_matrix(sign, sm+sizeof(unsigned long long)+mlen);
 	*(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8) 
 		= sign_i;

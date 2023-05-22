@@ -1,8 +1,21 @@
 #include "api.h"
 #include "common.h"
 
-void import_signed_msg(matrix *errorMtx, uint64_t *sign_i, const unsigned char *sm){
-	// TODO
+char* convertToHexString2(const unsigned char* array, size_t length) {
+    char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
+
+    if (hexString == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < length; ++i) {
+        sprintf(hexString + (i * 2), "%02X", array[i]);  // Convert each byte to a 2-digit hexadecimal number
+    }
+
+    hexString[length * 2] = '\0';  // Null-terminate the string
+
+    return hexString;
 }
 
 
@@ -27,7 +40,7 @@ int
 crypto_sign_open(unsigned char *m, unsigned long long *mlen,
                  const unsigned char *sm, unsigned long long smlen,
                  const unsigned char *pk){
-	matrix *errorMtx = new_matrix(1, CODE_N);
+	matrix *sign = new_matrix(1, CODE_N);
 
 	matrix *H_pub = new_matrix(CODE_N - CODE_K - 1, CODE_N);
 
@@ -38,39 +51,44 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 	uint64_t mlen_rx;
 	unsigned char* m_rx;
 	
-	memcpy(&mlen_rx, sm, sizeof(uint64_t));
+	// import signed msg 
+	// sign is (mlen, M, e, sign_i)
+	mlen_rx = *(unsigned long long*)sm;
 	m_rx = (unsigned char*)malloc(mlen_rx);
-
 	memcpy(m_rx, sm + sizeof(uint64_t), mlen_rx);
-
-	import_signed_msg(errorMtx, &sign_i, sm + sizeof(uint64_t) + mlen_rx);
+	import_matrix(sign, sm + sizeof(unsigned long long) + mlen_rx);
+	sign_i = *(unsigned long long*)(sm + sizeof(unsigned long long) + mlen_rx + sign->nrows * sign->ncols/8);	
 	
-	if(hamming_weight(errorMtx) > WEIGHT_PUB) {
+	if(hamming_weight(sign) > WEIGHT_PUB) {
 		fprintf(stderr, "larger weight\n");
 		return VERIF_REJECT;
 	}
-		
-	hash_message((unsigned char*)syndrome_by_hash->elem, m_rx, mlen_rx, sign_i);
+	
+	uint8_t randstr[syndrome_by_hash->ncols/8 + 1];
+	printf("open!!!!\n%s\nmlen: %llu\nsign_i: %lu\n", convertToHexString2(m_rx, mlen_rx), mlen_rx, sign_i);
+	hash_message(randstr, m_rx, mlen_rx, sign_i);
+	randomize(syndrome_by_hash, randstr);
 	
 	//import public key
 	import_pk(pk, H_pub);
 
-	vec_mat_prod(syndrome_by_e, H_pub, errorMtx);
+	vec_mat_prod(syndrome_by_e, H_pub, sign);
 
 	for(uint32_t i=0; i < CODE_N-CODE_K - 1; ++i){
 		if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
-			fprintf(stderr, "different hash\n");
-			printf("hashed value: \n");
-			print_matrix_open(syndrome_by_hash);
-			printf("H*e value: \n");
-			print_matrix_open(syndrome_by_e);
-			return VERIF_REJECT;
+			fprintf(stderr, "different hash at %d\n", i);
+			// printf("hashed value: \n");
+			// print_matrix_open(syndrome_by_hash);
+			// printf("H*e value: \n");
+			// print_matrix_open(syndrome_by_e);
+			// return VERIF_REJECT;
 		}
+		return VERIF_REJECT;
 	}
 	memcpy(m, m_rx, mlen_rx);
 	*mlen = mlen_rx;
 
-	delete_matrix(errorMtx);
+	delete_matrix(sign);
 	delete_matrix(H_pub);
 
 	delete_matrix(syndrome_by_hash);

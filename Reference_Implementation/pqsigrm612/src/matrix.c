@@ -60,6 +60,8 @@ matrix* copy_matrix(matrix* self, matrix* src){
 }
 
 void export_matrix(matrix* self, uint8_t* dest){
+    assert(self->ncols % 8 == 0);
+
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
         for (uint32_t j = 0; j < self->ncols; j+=8){
@@ -77,6 +79,8 @@ void export_matrix(matrix* self, uint8_t* dest){
 }
 
 void import_matrix(matrix* self, const uint8_t* src){
+    assert(self->ncols % 8 == 0);
+    
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
         for (uint32_t j = 0; j < self->ncols; j+=8){
