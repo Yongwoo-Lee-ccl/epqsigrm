@@ -1,6 +1,15 @@
 #include "api.h"
 #include "common.h"
 
+void print_partial_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
+	for(uint32_t i = r1; i < r2; i++){
+		for(uint32_t j = c1; j < c2; j++){
+			printf("%u", get_element(mat, i, j));
+		}
+		printf("\n");
+	}
+}
+
 void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep){
 	//export private in order: Q, part_perm1, pert_perm2
 	memcpy		(sk, 
@@ -131,7 +140,6 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	}
 
 	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
-	
 	export_pk(pk, Hpub);
 
 	delete_matrix(Gm);
