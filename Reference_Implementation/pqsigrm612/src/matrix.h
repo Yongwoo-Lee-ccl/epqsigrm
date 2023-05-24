@@ -30,7 +30,7 @@ matrix* copy_matrix(matrix* self, matrix* src);
 void export_matrix(matrix* self, uint8_t* dest);
 void import_matrix(matrix* self, const uint8_t* src);
 
-matrix* rref(matrix* self);
+matrix* rref(matrix* self, matrix* syndrome);
 matrix* transpose(matrix *self, matrix* dest);
 int inverse(matrix *self, matrix *dest);
 int is_nonsingular(matrix *self);
@@ -51,5 +51,6 @@ void codeword(matrix* self, uint8_t* seed, matrix* dest);
 uint8_t is_zero(matrix* self);
 
 uint16_t rank(const matrix* self);
+uint32_t size_in_byte(const matrix* self);
 
 #endif

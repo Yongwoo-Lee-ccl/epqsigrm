@@ -65,22 +65,43 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     m_rx = (unsigned char*)malloc(mlen_rx);
     memcpy(m_rx, sm + sizeof(uint64_t), mlen_rx);
     import_matrix(sign, sm + sizeof(uint64_t) + mlen_rx);
+
     sign_i = *(uint64_t*)(sm + sizeof(uint64_t) + mlen_rx + sign->nrows * sign->ncols/8);    
+
+
     
     if(hamming_weight(sign) > WEIGHT_PUB) {
         fprintf(stderr, "larger weight\n");
-        return VERIF_REJECT;
+        // return VERIF_REJECT;
     }
+    
+    //import public key
+    import_pk(pk, Hpub);
 
     uint8_t randstr[syndrome_by_hash->ncols/8 + 1];
     hash_message(randstr, m_rx, mlen_rx, sign_i);
     randomize(syndrome_by_hash, randstr);
 
-    //import public key
-    import_pk(pk, Hpub);
+
+    
+    matrix* test_e = new_matrix(1, Hpub->ncols);
+    matrix* test_s = new_matrix(1, Hpub->nrows);
+
+    for (uint32_t i = 0; i < syndrome_by_hash->ncols; i++)
+    {
+        uint8_t bit = get_element(syndrome_by_hash, 0, i);
+        set_element(test_e, 0, i, bit);
+    }
+
+    vec_mat_prod(test_s, Hpub, test_e);
+
+
+    mat_mat_add(test_s, syndrome_by_hash, test_s);
+    printf("is error generated correctly: %d\n", is_zero(test_s));
 
     vec_mat_prod(syndrome_by_e, Hpub, sign);
 
+    printf("is a codeword: %d\n", is_zero(syndrome_by_e));
     // int count_diff = 0;
     for(uint32_t i=0; i < CODE_N-CODE_K - 1; ++i){
         if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){

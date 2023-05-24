@@ -10,6 +10,18 @@ void print_partial_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, u
 	}
 }
 
+// void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep, matrix* Sinv){
+// 	//export private in order: Q, part_perm1, pert_perm2
+// 	memcpy		(sk, 
+// 					Q, sizeof(uint16_t)*CODE_N);
+// 	memcpy		(sk+sizeof(uint16_t)*CODE_N, 
+// 					part_perm1, sizeof(uint16_t)*CODE_N/4);
+// 	memcpy		(sk+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
+// 					part_perm2, sizeof(uint16_t)*CODE_N/4);
+// 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
+// 	export_matrix(Sinv, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2 + size_in_byte(Hrep));
+// }
+
 void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep){
 	//export private in order: Q, part_perm1, pert_perm2
 	memcpy		(sk, 
@@ -20,6 +32,7 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 					part_perm2, sizeof(uint16_t)*CODE_N/4);
 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
+
 
 void export_pk(unsigned char *pk, matrix *Hpub){
 	export_matrix(Hpub, pk);
@@ -76,7 +89,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		}
 		if(is_odd) break;
 	}
-	rref(Hrep);
+	rref(Hrep, NULL);
 
 	// TODO: two random rows 
 
@@ -100,19 +113,19 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	dual(Gm, Hm);
 
 	// pick a random codeword from the dual code
-	matrix* code_from_dual = new_matrix(1, CODE_N);
-	matrix* syndrome = new_matrix(1, CODE_K);
+	matrix* code_from_dual = new_matrix(1, Hm->ncols);
+	matrix* random_syndrome = new_matrix(1, Hm->nrows);
 	uint8_t seed[(Hm->nrows + 7)/8];
 	while(1){
 		randombytes(seed, (Hm->nrows + 7)/8);
 		codeword(Hm, seed, code_from_dual);
 		
-		vec_mat_prod(syndrome, Hm, code_from_dual);
-		if(! is_zero(syndrome)){
+		vec_mat_prod(random_syndrome, Hm, code_from_dual);
+		if(! is_zero(random_syndrome)){
 			break;
 		}
 	}
-	delete_matrix(syndrome);
+	delete_matrix(random_syndrome);
 
 	copy_matrix(Gpub, Gm);
 	partial_replace(Gpub, CODE_K, CODE_K + 1, 0, CODE_N, code_from_dual, 0, 0);
@@ -124,7 +137,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	copy_matrix(Hcpy, Hpub);
 
 	col_permute(Hcpy, 0, Hcpy->nrows, 0, Hcpy->ncols, Q);
-	rref(Hcpy);
+	rref(Hcpy, NULL);
 
 	uint16_t pivot[Hcpy->nrows];
 	uint16_t d_pivot[Hcpy->ncols - Hcpy->nrows];
@@ -140,17 +153,20 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	}
 	
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
-	rref(Hpub);
+
+	matrix* S = new_matrix(Hpub->nrows, Hpub->nrows);
+	for (uint32_t i = 0; i < S->nrows; i++)
+	{
+		set_element(S, i, i, (uint8_t)1);
+	}
+	
+
+	rref(Hpub, S);
+	matrix* Sinv = new_matrix(Hpub->nrows, Hpub->nrows);
+	inverse(S, Sinv);
 	printf("rank: %d / %d\n", rank(Hpub), Hpub->nrows);
 
-	// DEBUG
-	for (uint32_t i = 0; i < Hpub->nrows; i++)
-	{
-		if(get_element(Hpub, i, i) != 1){
-			printf("not identity!, %d, %d, %d\n", i, i, get_element(Hpub, i, i));
-		}		
-	}
-
+	// export_sk(sk, Q, part_perm1, part_perm2, Hrep, Sinv);
 	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
 	export_pk(pk, Hpub);
 

@@ -106,7 +106,7 @@ void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
 }
 
 // make a matrix into rref form, inplace
-matrix* rref(matrix* self)
+matrix* rref(matrix* self, matrix* syndrome)
 {
     // Assume column is longer than row
     uint32_t succ_row_idx = 0;
@@ -127,6 +127,9 @@ matrix* rref(matrix* self)
         // <succ_row_idx> th row <-> <row_idx> th row
         if(row_idx != succ_row_idx){
             row_interchange(self, succ_row_idx, row_idx);
+            if(syndrome != NULL){
+                row_interchange(syndrome, succ_row_idx, row_idx);
+            }
         }
                 
         // By adding <succ_row_idx> th row in the other nrows 
@@ -137,6 +140,9 @@ matrix* rref(matrix* self)
 
             if(get_element(self, i, col_idx) == 1){
                 row_addition_internal(self, i, succ_row_idx);
+                if(syndrome != NULL){
+                    row_interchange(syndrome, i, succ_row_idx);
+                }
             }
         }
         row_idx = ++succ_row_idx;
@@ -156,9 +162,9 @@ matrix* transpose(matrix *self, matrix* dest){
 }
 
 int inverse(matrix *self, matrix *dest){
-    if(self->nrows != self->ncols)             return INV_FAIL;
-    if(dest->nrows != dest->ncols)     return INV_FAIL;
-    if(self->nrows != dest->nrows)         return INV_FAIL;
+    if(self->nrows != self->ncols)  return INV_FAIL;
+    if(dest->nrows != dest->ncols)  return INV_FAIL;
+    if(self->nrows != dest->nrows)  return INV_FAIL;
 
     matrix* temp = new_matrix(self->nrows, self->ncols);
     copy_matrix(temp, self);
@@ -314,7 +320,7 @@ void dual(matrix* self, matrix* dual_sys){
     uint16_t lead_diff[self->ncols - self->nrows];    
 
 
-    rref(self);
+    rref(self, NULL);
     get_pivot(self, lead, lead_diff);
 
     // Fill not-identity part (P')
@@ -412,4 +418,10 @@ uint16_t rank(const matrix* self) {
     delete_matrix(copy);
 
     return rank;
+}
+
+uint32_t size_in_byte(const matrix* self){
+    // Assume ncols is a multiple of 8
+    // otherwise, do a ceiling
+    return self->nrows * (self->ncols + 7)/8;
 }

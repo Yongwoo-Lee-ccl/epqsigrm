@@ -40,6 +40,15 @@ int wgt(float *yc, float *yr)
     return w;
 }
 
+// void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep, matrix* Sinv)
+// {
+//     *Q             = (uint16_t*)(sk);
+//     *part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
+//     *part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
+//     import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
+//     import_matrix(Sinv, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2 + size_in_byte(Hrep));
+// }
+
 void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep)
 {
     *Q             = (uint16_t*)(sk);
@@ -76,27 +85,38 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // read secret key(bit stream) into appropriate type.
     uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
     matrix* Hrep = new_matrix(K_REP, (1<<RM_R));
+    // matrix* Sinv = new_matrix(CODE_N - CODE_K - 1, CODE_N - CODE_K - 1);
 
+    // import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep, Sinv);
     import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep);
     
     // Do signing, decode until the a error vector wt <= w is achieved
     uint64_t sign_i;
-    matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K - 1);
+    matrix *challenge= new_matrix(1, CODE_N - CODE_K - 1);
+    matrix *syndrome = new_matrix(1, CODE_N - CODE_K - 1);
 
     float yc[CODE_N];
     float yr[CODE_N];
     
     init_decoding(CODE_N);
     uint32_t iter = 0;
-    uint8_t randstr[synd_mtx->ncols/8];
+    uint8_t randstr[challenge->ncols/8];
 
     while(1){
         // random number
         randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
-        // Find syndrome
         hash_message(randstr, m, mlen, sign_i);
-        randomize(synd_mtx, randstr);
-        y_init(yc, yr, synd_mtx, Q);
+        randomize(challenge, randstr);
+        // Find syndrome Sinv * challenge
+        // vec_mat_prod(syndrome, Sinv, challenge);
+        syndrome = challenge;
+        printf("syndrome:\n");
+        for (uint32_t i = 0; i < syndrome->ncols; i++)
+        {
+            printf("%d", get_element(syndrome, 0, i));
+        }printf("\n");
+
+        y_init(yc, yr, syndrome, Q);
         
         // decode and find e
         // In the recursive decoding procedure,
@@ -110,7 +130,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // compute Qinv*e'
     matrix *sign = new_matrix(1, CODE_N);
     for(uint32_t i=0; i < CODE_N; i++){
-        set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
+        // set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
+        set_element(sign, 0, i, (yr[Q[i]] >= 0)?0 : 1);
     }
 
     {// Decoding: verification
@@ -143,16 +164,20 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
         // a codeword
         matrix* codeword = new_matrix(1, CODE_N);
         for(size_t i = 0; i < codeword->ncols; i++){
-            set_element(codeword, 0, i, (yc[i] >= 0)?0 : 1);
+            set_element(codeword, 0, i, (yc[Q[i]] >= 0)?0 : 1);
         }
+        col_permute(Hm, 0, Hm->nrows, 0, Hm->ncols, Q);
+        rref(Hm, NULL);
+        matrix* syndrome_test = new_matrix(1, Hm->nrows);
+        vec_mat_prod(syndrome_test, Hm, codeword);
 
-        // do multiplication
-        matrix* syndrome = new_matrix(1, Hm->nrows);
-        vec_mat_prod(syndrome, Hm, codeword);
+        // rref(Hm, NULL);
         
-        uint8_t res = is_zero(syndrome);
+        // mat_mat_add(syndrome_test, syndrome, syndrome_challenge);
+        uint8_t res = is_zero(syndrome_test);
         printf("is decoding ok?: %d\n", res);
     }// Decoding: verification
+
 
     // export message
     // sign is (mlen, M, e, sign_i)
@@ -160,13 +185,14 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     *(unsigned long long*)sm = mlen;
     memcpy(sm+sizeof(unsigned long long), m, mlen);
     export_matrix(sign, sm+sizeof(unsigned long long)+mlen);
+
     *(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8) 
         = sign_i;
 
     *smlen = sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8 + sizeof(unsigned long long);
     
     delete_matrix(Hrep);
-    delete_matrix(synd_mtx);
+    delete_matrix(challenge);
     delete_matrix(sign);
 
     return 0;    
