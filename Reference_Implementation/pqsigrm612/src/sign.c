@@ -2,6 +2,17 @@
 #include "common.h"
 #include "nearest_vector.h"
 
+void print_matrix_sign(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
+    printf("sign\n");
+    for (uint32_t i = r1; i < r2; i++)
+    {
+        for (size_t j = c1; j < c2; j++)
+        {
+            printf("%d", get_element(mat, i, j));
+        }printf("\n");
+    }
+}
+
 char* convertToHexString(const unsigned char* array, size_t length) {
     char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
 
@@ -17,19 +28,6 @@ char* convertToHexString(const unsigned char* array, size_t length) {
     hexString[length * 2] = '\0';  // Null-terminate the string
 
     return hexString;
-}
-
-void print_matrix_sign(matrix* mtx){
-    uint32_t row = mtx->nrows;
-    uint32_t col = mtx->ncols;
-    for (size_t i = 0; i < row; i++)
-    {
-        for (size_t j = 0; j < col; j++)
-        {
-            printf("%d",get_element(mtx, i,j));
-        }printf("\n");
-    }
-    
 }
 
 int wgt(float *yc, float *yr)
@@ -110,11 +108,11 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
         // Find syndrome Sinv * challenge
         // vec_mat_prod(syndrome, Sinv, challenge);
         syndrome = challenge;
-        printf("syndrome:\n");
-        for (uint32_t i = 0; i < syndrome->ncols; i++)
-        {
-            printf("%d", get_element(syndrome, 0, i));
-        }printf("\n");
+        // printf("syndrome:\n");
+        // for (uint32_t i = 0; i < syndrome->ncols; i++)
+        // {
+        //     printf("%d", get_element(syndrome, 0, i));
+        // }printf("\n");
 
         y_init(yc, yr, syndrome, Q);
         
@@ -130,8 +128,8 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // compute Qinv*e'
     matrix *sign = new_matrix(1, CODE_N);
     for(uint32_t i=0; i < CODE_N; i++){
-        // set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
-        set_element(sign, 0, i, (yr[Q[i]] >= 0)?0 : 1);
+        set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
+        // set_element(sign, 0, i, (yc[Q[i]] >= 0)?0 : 1);
     }
 
     {// Decoding: verification
@@ -142,6 +140,10 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
         // partial replacement
         matrix* Grep = new_matrix((1<<RM_R) - K_REP, (1<<RM_R));
         dual(Hrep, Grep);
+        print_matrix_sign(Hrep, 0, Hrep->nrows, 0, Hrep->ncols);
+        printf("\n^Hrep\n");
+        print_matrix_sign(Grep, 0, Grep->nrows, 0, Grep->ncols);
+        printf("\n^grep\n");
         for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
         {
             partial_replace(Gm, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
@@ -153,13 +155,22 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
             col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
                 i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
         }
-        col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
-            3*CODE_N/4, CODE_N, part_perm2);
-
+        col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 3*CODE_N/4, CODE_N, part_perm2);
+        for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm1[i]);
+        }printf("\n^ partperm1\n");
+        for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm2[i]);
+        }printf("\n^ partperm2\n");
+        
         // find dual 
         // don't add a codeword from dual
         matrix* Hm = new_matrix(CODE_N-CODE_K, CODE_N);
         dual(Gm, Hm);
+        print_matrix_sign(Hm, 1000, 1064, 2000, 2064);
+
 
         // a codeword
         matrix* codeword = new_matrix(1, CODE_N);
@@ -168,10 +179,11 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
         }
         col_permute(Hm, 0, Hm->nrows, 0, Hm->ncols, Q);
         rref(Hm, NULL);
+        print_matrix_sign(Hm, 1000, 1064, 2000, 2064);
+
         matrix* syndrome_test = new_matrix(1, Hm->nrows);
         vec_mat_prod(syndrome_test, Hm, codeword);
 
-        // rref(Hm, NULL);
         
         // mat_mat_add(syndrome_test, syndrome, syndrome_challenge);
         uint8_t res = is_zero(syndrome_test);

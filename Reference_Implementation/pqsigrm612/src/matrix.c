@@ -21,7 +21,7 @@ void init_zero(matrix *self){
     {
         for (uint32_t j = 0; j < self->ncols; j++)
         {
-            self->elem[i][j] = 0;
+            set_element(self, i, j, 0);
         }
     }
 }
@@ -319,6 +319,7 @@ void dual(matrix* self, matrix* dual_sys){
     uint16_t lead[self->nrows];
     uint16_t lead_diff[self->ncols - self->nrows];    
 
+    init_zero(dual_sys);
 
     rref(self, NULL);
     get_pivot(self, lead, lead_diff);

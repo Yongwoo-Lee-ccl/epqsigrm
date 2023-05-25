@@ -1,6 +1,18 @@
 #include "api.h"
 #include "common.h"
 
+void print_matrix_open(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
+    printf("open\n");
+
+    for (uint32_t i = r1; i < r2; i++)
+    {
+        for (size_t j = c1; j < c2; j++)
+        {
+            printf("%d", get_element(mat, i, j));
+        }printf("\n");
+    }
+}
+
 char* convertToHexString2(const unsigned char* array, size_t length) {
     char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
 
@@ -32,18 +44,6 @@ void import_pk(const unsigned char *pk, matrix *H_pub){
     import_matrix(H_pub, pk);
 }
 
-void print_matrix_open(matrix* mtx){
-    uint32_t row = mtx->nrows;
-    uint32_t col = mtx->ncols;
-    for (size_t i = 0; i < row; i++)
-    {
-        for (size_t j = 0; j < col; j++)
-        {
-            printf("%d",get_element(mtx, i,j));
-        }printf("\n");
-    }
-    
-}
 
 int
 crypto_sign_open(unsigned char *m, unsigned long long *mlen,
@@ -77,6 +77,8 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     
     //import public key
     import_pk(pk, Hpub);
+    print_matrix_open(Hpub, 1000, 1064, 2000, 2064);
+
 
     uint8_t randstr[syndrome_by_hash->ncols/8 + 1];
     hash_message(randstr, m_rx, mlen_rx, sign_i);

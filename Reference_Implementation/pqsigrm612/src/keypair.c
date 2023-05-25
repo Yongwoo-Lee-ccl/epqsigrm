@@ -1,6 +1,18 @@
 #include "api.h"
 #include "common.h"
 
+
+void print_matrix_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
+	printf("keypari\n");
+    for (uint32_t i = r1; i < r2; i++)
+    {
+        for (size_t j = c1; j < c2; j++)
+        {
+            printf("%d", get_element(mat, i, j));
+        }printf("\n");
+    }
+}
+
 void print_partial_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
 	for(uint32_t i = r1; i < r2; i++){
 		for(uint32_t j = c1; j < c2; j++){
@@ -90,6 +102,11 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		if(is_odd) break;
 	}
 	rref(Hrep, NULL);
+	dual(Hrep, Grep);
+	print_matrix_keypair(Hrep, 0, Hrep->nrows, 0, Hrep->ncols);
+	printf("\n^Hrep\n");
+	print_matrix_keypair(Grep, 0, Grep->nrows, 0, Grep->ncols);
+	printf("\n^grep\n");
 
 	// TODO: two random rows 
 
@@ -105,12 +122,20 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
 			i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
 	}
-	
 	col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
 		3*CODE_N/4, CODE_N, part_perm2);
-
+	for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm1[i]);
+        }printf("\n^ partperm1\n");
+	for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm2[i]);
+        }printf("\n^ partperm2\n");
 	// Parity check matrix of the modified RM code
 	dual(Gm, Hm);
+	print_matrix_keypair(Hm, 1000, 1064, 2000, 2064);
+
 
 	// pick a random codeword from the dual code
 	matrix* code_from_dual = new_matrix(1, Hm->ncols);
@@ -128,7 +153,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	delete_matrix(random_syndrome);
 
 	copy_matrix(Gpub, Gm);
-	partial_replace(Gpub, CODE_K, CODE_K + 1, 0, CODE_N, code_from_dual, 0, 0);
+	// partial_replace(Gpub, CODE_K, CODE_K + 1, 0, CODE_N, code_from_dual, 0, 0);
 	permutation_gen(Q, CODE_N);
 
 	// Generate the dual code of Gm and the public key
@@ -154,21 +179,16 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 
-	matrix* S = new_matrix(Hpub->nrows, Hpub->nrows);
-	for (uint32_t i = 0; i < S->nrows; i++)
-	{
-		set_element(S, i, i, (uint8_t)1);
-	}
-	
-
-	rref(Hpub, S);
-	matrix* Sinv = new_matrix(Hpub->nrows, Hpub->nrows);
-	inverse(S, Sinv);
+	rref(Hpub, NULL);
+	// matrix* Sinv = new_matrix(Hpub->nrows, Hpub->nrows);
+	// inverse(S, Sinv);
 	printf("rank: %d / %d\n", rank(Hpub), Hpub->nrows);
 
 	// export_sk(sk, Q, part_perm1, part_perm2, Hrep, Sinv);
 	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
 	export_pk(pk, Hpub);
+
+	print_matrix_keypair(Hpub, 1000, 1064, 2000, 2064);
 
 	delete_matrix(Gm);
 	delete_matrix(Hm);
