@@ -12,19 +12,6 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
         mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
     }
     init_zero(mat);
-
-    //추가 시작
-    //free(mat);
-    //free(mat->elem);
-    
-    /*
-    for (uint32_t i = 0; i < nrows; i++)
-    {
-        free(mat->elem[i]);
-    }
-    */
-    //추가 끝
-
     return mat;
 }
 

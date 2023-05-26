@@ -20,7 +20,6 @@ unsigned char* hash_message(unsigned char *s, const unsigned char *m,
 	memcpy(buffer + mlen, (unsigned char*)(&sign_i), sizeof(unsigned long long));
 	SHAKE256(s, buffer, mlen+sizeof(uint64_t), (1 + (CODE_N - CODE_K - 1)/64)*64/8);
 
-	free(buffer); //추가
 	return s;
 }
 

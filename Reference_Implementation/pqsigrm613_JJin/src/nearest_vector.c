@@ -130,7 +130,6 @@ void init_decoding(int n){
     if(temp == 0) 
         temp = (float*)malloc(n * sizeof(float));
 
-    //free(temp); //추가
 }
 
 void y_permute(float *y, const int f, const int r, uint16_t *Q){

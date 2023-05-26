@@ -27,7 +27,6 @@ char* convertToHexString2(const unsigned char* array, size_t length) {
 
     hexString[length * 2] = '\0';  // Null-terminate the string
 
-    free(hexString); //추가 // 맞나...??
     return hexString;
 }
 
