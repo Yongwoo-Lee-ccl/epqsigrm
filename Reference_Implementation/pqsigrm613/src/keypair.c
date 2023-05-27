@@ -158,8 +158,13 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 	rref(Hpub);
 
-	export_sk(sk, Q, part_perm1, part_perm2, Hrep);
-	export_pk(pk, Hpub);
+	matrix* non_identity_hpub = new_matrix(Hpub->nrows, Hpub->ncols - Hpub->nrows);
+    partial_replace(non_identity_hpub, 0, non_identity_hpub->nrows, 
+        0, non_identity_hpub->ncols, 
+        Hpub, 0, Hpub->nrows);
+
+    export_sk(sk, Q, part_perm1, part_perm2, Hrep);
+    export_pk(pk, non_identity_hpub);
 
 	delete_matrix(Gm);
 	delete_matrix(Hm);
@@ -170,6 +175,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	delete_matrix(code_from_dual);
 	delete_matrix(Hcpy);
 	delete_matrix(random_row);
+	delete_matrix(non_identity_hpub);
 
 	return 0;
 }
