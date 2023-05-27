@@ -2,34 +2,6 @@
 #include "common.h"
 #include "nearest_vector.h"
 
-void print_matrix_sign(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
-    printf("sign\n");
-    for (uint32_t i = r1; i < r2; i++)
-    {
-        for (size_t j = c1; j < c2; j++)
-        {
-            printf("%d", get_element(mat, i, j));
-        }printf("\n");
-    }
-}
-
-char* convertToHexString(const unsigned char* array, size_t length) {
-    char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
-
-    if (hexString == NULL) {
-        fprintf(stderr, "Memory allocation failed.\n");
-        return NULL;
-    }
-
-    for (size_t i = 0; i < length; ++i) {
-        sprintf(hexString + (i * 2), "%02X", array[i]);  // Convert each byte to a 2-digit hexadecimal number
-    }
-
-    hexString[length * 2] = '\0';  // Null-terminate the string
-
-    return hexString;
-}
-
 int wgt(float *yc, float *yr)
 {
     int i, w=0;
@@ -37,15 +9,6 @@ int wgt(float *yc, float *yr)
         if(yc[i] != yr[i]) w++;
     return w;
 }
-
-// void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep, matrix* Sinv)
-// {
-//     *Q             = (uint16_t*)(sk);
-//     *part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
-//     *part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
-//     import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
-//     import_matrix(Sinv, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2 + size_in_byte(Hrep));
-// }
 
 void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep)
 {
@@ -55,9 +18,7 @@ void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uin
     import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
-/*
-* yr and yc are equal at the end.
-*/
+// yr and yc are equal at the end.
 void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *Q){
     for(uint32_t i=0; i < syndrome->ncols; i++) {
         uint8_t bit = get_element(syndrome, 0, i);
@@ -95,8 +56,9 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
 
     float yc[CODE_N];
     float yr[CODE_N];
-    
-    init_decoding(CODE_N);
+    float mempool[CODE_N];
+
+    init_decoding(mempool);
     uint32_t iter = 0;
     uint8_t randstr[challenge->ncols/8];
 

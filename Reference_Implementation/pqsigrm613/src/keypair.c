@@ -1,39 +1,6 @@
 #include "api.h"
 #include "common.h"
 
-
-void print_matrix_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
-	printf("keypari\n");
-    for (uint32_t i = r1; i < r2; i++)
-    {
-        for (size_t j = c1; j < c2; j++)
-        {
-            printf("%d", get_element(mat, i, j));
-        }printf("\n");
-    }
-}
-
-void print_partial_keypair(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
-	for(uint32_t i = r1; i < r2; i++){
-		for(uint32_t j = c1; j < c2; j++){
-			printf("%u", get_element(mat, i, j));
-		}
-		printf("\n");
-	}
-}
-
-// void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep, matrix* Sinv){
-// 	//export private in order: Q, part_perm1, pert_perm2
-// 	memcpy		(sk, 
-// 					Q, sizeof(uint16_t)*CODE_N);
-// 	memcpy		(sk+sizeof(uint16_t)*CODE_N, 
-// 					part_perm1, sizeof(uint16_t)*CODE_N/4);
-// 	memcpy		(sk+sizeof(uint16_t)*CODE_N+sizeof(uint16_t)*CODE_N/4, 
-// 					part_perm2, sizeof(uint16_t)*CODE_N/4);
-// 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
-// 	export_matrix(Sinv, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2 + size_in_byte(Hrep));
-// }
-
 void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* part_perm2, matrix* Hrep){
 	//export private in order: Q, part_perm1, pert_perm2
 	memcpy		(sk, 
@@ -44,7 +11,6 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 					part_perm2, sizeof(uint16_t)*CODE_N/4);
 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
-
 
 void export_pk(unsigned char *pk, matrix *Hpub){
 	export_matrix(Hpub, pk);
@@ -124,20 +90,9 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	}
 	col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 
 		3*CODE_N/4, CODE_N, part_perm2);
-	/*	
-	for (size_t i = 0; i < CODE_N/4 ; i++)
-        {
-            printf("%d ", part_perm1[i]);
-        }printf("\n^ partperm1\n");
-	for (size_t i = 0; i < CODE_N/4 ; i++)
-        {
-            printf("%d ", part_perm2[i]);
-        }printf("\n^ partperm2\n");
-	*/
+	
 	// Parity check matrix of the modified RM code
 	dual(Gm, Hm);
-	//print_matrix_keypair(Hm, 1000, 1064, 2000, 2064);
-
 
 	// pick a random codeword from the dual code
 	matrix* code_from_dual = new_matrix(1, Hm->ncols);

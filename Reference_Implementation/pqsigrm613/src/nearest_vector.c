@@ -1,6 +1,6 @@
 #include "nearest_vector.h"
 
-float *temp; 
+float *temp = NULL; 
 
 void mindist_decoding(float* y, matrix* Hrep){
     matrix* recieved = new_matrix(1, Hrep->ncols);
@@ -126,9 +126,9 @@ void recursive_decoding_mod(float* y, const  int r1, const int m1,
     return;
 }
 
-void init_decoding(int n){
-    if(temp == 0) 
-        temp = (float*)malloc(n * sizeof(float));
+void init_decoding(float* pool){
+    if(temp == NULL) 
+        temp = pool;
 
 }
 
