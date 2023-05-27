@@ -42,11 +42,11 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
 
 	uint8_t is_odd = 0;
-	uint8_t randstr[Grep->ncols * Grep->nrows/8];
+	uint8_t randstr[Grep->nrows * Grep->colsize * 8];
 
 	// check if Hrep has a odd row.
 	while(1){
-		randombytes(randstr, Grep->ncols * Grep->nrows/8);
+		randombytes(randstr, Grep->nrows * Grep->colsize * 8);
 		randomize(Grep, randstr);
 		
 		dual(Grep, Hrep);
@@ -83,13 +83,13 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		3*CODE_N/4, CODE_N, part_perm2);
 	
 	// two random rows (one of them has odd Hamming weight)
-	uint8_t randstr_for_row[Gm->ncols / 8];
+	uint8_t randstr_for_row[Gm->colsize * 8];
 	matrix *random_row = new_matrix(1, Gm->ncols);
 	for (uint32_t i = 0; i < 2; i++){
 		// if i = 0 generate a row with Hamming weight
 		if(i == 0){
 			while(1){
-				randombytes(randstr_for_row, Gm->ncols / 8);
+				randombytes(randstr_for_row, Gm->colsize * 8);
 				// check if odd
 				uint8_t parity = 0;
 				for (uint32_t j = 0; j < Gm->ncols / 8; j++)

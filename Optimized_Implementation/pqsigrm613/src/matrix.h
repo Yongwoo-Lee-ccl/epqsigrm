@@ -12,13 +12,14 @@
 #define INV_SUCCESS 1
 #define INV_FAIL 0
 
-#define get_element(A, i, j)  ((A->elem)[(i)][(j)])
-#define set_element(A, i, j, val) ((A->elem)[(i)][(j)] = (val))
+#define get_element(A, i, j) (!!(((A)->elem[(i)][(j) / 64]) & (1ULL << ((j) % 64))))
+#define set_element(A, i, j, val) ((A)->elem[(i)][(j) / 64] = ((A)->elem[(i)][(j) / 64] & ~(1ULL << ((j) % 64))) | ((uint64_t)(val) << ((j) % 64)))
 
 typedef struct {
-    uint16_t nrows;// number of rows.
-    uint16_t ncols;// number of columns.
-    uint8_t** elem;// elements.
+    uint32_t nrows;// number of rows.
+    uint32_t ncols;// number of columns.
+    uint32_t colsize; // number of 64-bit int in each row
+    uint64_t** elem;// elements.
 } matrix;
 
 matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;

@@ -79,7 +79,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     // compute Qinv*e'
     matrix *sign = new_matrix(1, CODE_N);
     for(uint32_t i=0; i < CODE_N; i++){
-        set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
+        set_element(sign, 0, i, ((yr[Q[i]] != yc[Q[i]])?1ULL:0ULL));
     }
 
     // export message
@@ -88,10 +88,10 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
     memcpy(sm+sizeof(unsigned long long), m, mlen);
     export_matrix(sign, sm+sizeof(unsigned long long)+mlen);
 
-    *(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8) 
+    *(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->colsize * 8) 
         = sign_i;
 
-    *smlen = sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8 + sizeof(unsigned long long);
+    *smlen = sizeof(unsigned long long) + mlen + sign->nrows * sign->colsize * 8 + sizeof(unsigned long long);
     
     delete_matrix(Hrep);
     delete_matrix(challenge);

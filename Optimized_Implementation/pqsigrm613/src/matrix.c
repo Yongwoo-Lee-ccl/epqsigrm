@@ -6,10 +6,11 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
     mat = (matrix*) malloc (sizeof (matrix));
     mat->nrows = nrows; 
     mat->ncols = ncols;
-    mat->elem = (uint8_t**)malloc(nrows * sizeof(uint8_t*));
+    mat->colsize = (ncols + 63)/64;
+    mat->elem = (uint64_t**)malloc(nrows * sizeof(uint64_t*));
     for (uint32_t i = 0; i < nrows; i++)
     {
-        mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
+        mat->elem[i] = (uint64_t*)malloc((mat->colsize) * sizeof(uint64_t));
     }
     init_zero(mat);
     return mat;
@@ -19,10 +20,7 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 void init_zero(matrix *self){
     for (uint32_t i = 0; i < self->nrows; i++)
     {
-        for (uint32_t j = 0; j < self->ncols; j++)
-        {
-            set_element(self, i, j, 0);
-        }
+        memset(self->elem[i], 0, self->colsize * 8);
     }
 }
 
@@ -53,7 +51,7 @@ void delete_matrix(matrix* self)
 void copy_matrix(matrix* self, matrix* src){
     for (uint32_t i = 0; i < src->nrows; i++)
     {
-        memcpy(self->elem[i], src->elem[i], src->ncols);
+        memcpy(self->elem[i], src->elem[i], src->colsize * 8);
     }
 }
 
@@ -64,7 +62,8 @@ void export_matrix(matrix* self, uint8_t* dest){
             uint8_t byte = 0;
             for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
             {
-                byte |= (self->elem[i][j+k] << k);
+                uint8_t bit = get_element(self, i, j+k);
+                byte |= (bit << k);
             }
             dest[byte_index++] = byte; 
         }
@@ -78,7 +77,8 @@ void import_matrix(matrix* self, const uint8_t* src){
             uint8_t byte = src[byte_index++];
             for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
             {
-                self->elem[i][j+k] = ( byte >> k) & 1;
+                uint64_t bit = (byte >> k) & 1;
+                set_element(self, i, j+k, bit);
             }
         }
     }
@@ -200,7 +200,7 @@ void dual(matrix* self, matrix* dual_sys){
 }
 
 void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
-    uint8_t* temp = self->elem[row1];
+    uint64_t* temp = self->elem[row1];
     self->elem[row1] = self->elem[row2];
     self->elem[row2] = temp;
 }
@@ -221,7 +221,7 @@ void codeword(matrix* self, uint8_t* seed, matrix* dest){
         uint32_t bit_offset = i & 7; // bit_offset = bit_index % 8;
         uint8_t rand_bit = (seed[byte_index] >> bit_offset) & 1;
         if (rand_bit == 1) {
-            for (uint32_t j = 0; j < self->ncols; j++)
+            for (uint32_t j = 0; j < self->colsize; j++)
             {
                 dest->elem[0][j] ^= self->elem[i][j];
             }
