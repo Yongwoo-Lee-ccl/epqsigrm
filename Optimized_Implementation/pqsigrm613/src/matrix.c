@@ -56,31 +56,14 @@ void copy_matrix(matrix* self, matrix* src){
 }
 
 void export_matrix(matrix* self, uint8_t* dest){
-    uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
-        for (uint32_t j = 0; j < self->ncols; j+=8){
-            uint8_t byte = 0;
-            for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
-            {
-                uint8_t bit = get_element(self, i, j+k);
-                byte |= (bit << k);
-            }
-            dest[byte_index++] = byte; 
-        }
+        memcpy(dest + i * self->colsize * 8, self->elem[i], self->colsize * 8);
     }
 }
 
 void import_matrix(matrix* self, const uint8_t* src){
-    uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
-        for (uint32_t j = 0; j < self->ncols; j+=8){
-            uint8_t byte = src[byte_index++];
-            for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
-            {
-                uint64_t bit = (byte >> k) & 1;
-                set_element(self, i, j+k, bit);
-            }
-        }
+        memcpy(self->elem[i], src + i * self->colsize * 8, self->colsize * 8);
     }
 }
 
