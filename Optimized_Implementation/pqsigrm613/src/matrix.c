@@ -1,5 +1,15 @@
 #include "matrix.h"
 
+inline uint64_t xor_bits(uint64_t value) {
+    value ^= value >> 32;
+    value ^= value >> 16;
+    value ^= value >> 8;
+    value ^= value >> 4;
+    value ^= value >> 2;
+    value ^= value >> 1;
+    return value & 1ULL;
+}
+
 matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 {
     matrix* mat;
@@ -135,22 +145,14 @@ void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
         for (uint32_t j = 0; j < mat->colsize; j++) {
             block_sum ^= mat->elem[i][j] & vec->elem[0][j];
         }
-        uint64_t bit = block_sum;
-        bit ^= bit >>32;
-        bit ^= bit >>16;
-        bit ^= bit >>8;
-        bit ^= bit >>4;
-        bit ^= bit >>2;
-        bit ^= bit >>1;
-        bit &= 1ULL;
-        set_element(self, 0, i, bit);
+        block_sum = xor_bits(block_sum);
+        set_element(self, 0, i, block_sum);
     }
 }
 
 void vec_vec_add(matrix* self, matrix* vec){
-    for (uint32_t j = 0; j < self->ncols; j++) {
-        uint8_t bit = get_element(self, 0, j) ^ get_element(vec, 0, j);
-        set_element(self, 0, j, bit);
+    for (uint32_t j = 0; j < self->colsize; j++) {
+        self->elem[0][j] ^= vec->elem[0][j];
     }
 }
 
