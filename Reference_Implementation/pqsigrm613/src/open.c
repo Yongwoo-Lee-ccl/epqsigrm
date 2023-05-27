@@ -28,10 +28,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 
     sign_i = *(uint64_t*)(sm + sizeof(uint64_t) + mlen_rx + sign->nrows * sign->ncols/8);    
 
-
-    
     if(hamming_weight(sign) > WEIGHT_PUB) {
-        fprintf(stderr, "larger weight\n");
         return VERIF_REJECT;
     }
     
@@ -46,11 +43,10 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 
     for(uint32_t i=0; i < CODE_N-CODE_K - 1; ++i){
         if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
-            fprintf(stderr, "different hash at %d\n", i);
             return VERIF_REJECT;
         }
     }
-    
+
     memcpy(m, m_rx, mlen_rx);
     *mlen = mlen_rx;
 

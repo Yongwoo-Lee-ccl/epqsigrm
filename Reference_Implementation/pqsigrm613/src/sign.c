@@ -142,7 +142,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
             set_element(codeword, 0, i, (yc[Q[i]] >= 0)?0 : 1);
         }
         col_permute(Hm, 0, Hm->nrows, 0, Hm->ncols, Q);
-        rref(Hm, NULL);
+        rref(Hm);
         //print_matrix_sign(Hm, 1000, 1064, 2000, 2064);
 
         matrix* syndrome_test = new_matrix(1, Hm->nrows);

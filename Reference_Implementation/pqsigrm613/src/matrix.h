@@ -30,7 +30,7 @@ matrix* copy_matrix(matrix* self, matrix* src);
 void export_matrix(matrix* self, uint8_t* dest);
 void import_matrix(matrix* self, const uint8_t* src);
 
-matrix* rref(matrix* self, matrix* syndrome);
+matrix* rref(matrix* self);
 matrix* transpose(matrix *self, matrix* dest);
 int inverse(matrix *self, matrix *dest);
 int is_nonsingular(matrix *self);
@@ -46,6 +46,8 @@ void row_interchange(matrix* mtx, uint32_t row_idx1, uint32_t row_idx2);
 void partial_replace(matrix* self, const uint32_t r1, const uint32_t c1,
         const uint32_t r2, const uint32_t c2, 
         matrix* src, const int r3, const int c3);
+void col_permute(matrix* self, const int r1, const int r2
+	, const int c1, const int c2, uint16_t* Q);
 
 void codeword(matrix* self, uint8_t* seed, matrix* dest);
 uint8_t is_zero(matrix* self);

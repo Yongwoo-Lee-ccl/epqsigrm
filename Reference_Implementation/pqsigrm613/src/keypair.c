@@ -67,12 +67,8 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		}
 		if(is_odd) break;
 	}
-	rref(Hrep, NULL);
+	rref(Hrep);
 	dual(Hrep, Grep);
-	//print_matrix_keypair(Hrep, 0, Hrep->nrows, 0, Hrep->ncols);
-	//printf("\n^Hrep\n");
-	//print_matrix_keypair(Grep, 0, Grep->nrows, 0, Grep->ncols);
-	//printf("\n^grep\n");
 
 	// TODO: two random rows 
 
@@ -119,7 +115,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	copy_matrix(Hcpy, Hpub);
 
 	col_permute(Hcpy, 0, Hcpy->nrows, 0, Hcpy->ncols, Q);
-	rref(Hcpy, NULL);
+	rref(Hcpy);
 
 	uint16_t pivot[Hcpy->nrows];
 	uint16_t d_pivot[Hcpy->ncols - Hcpy->nrows];
@@ -136,7 +132,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 
-	rref(Hpub, NULL);
+	rref(Hpub);
 	// matrix* Sinv = new_matrix(Hpub->nrows, Hpub->nrows);
 	// inverse(S, Sinv);
 	//printf("rank: %d / %d\n", rank(Hpub), Hpub->nrows);

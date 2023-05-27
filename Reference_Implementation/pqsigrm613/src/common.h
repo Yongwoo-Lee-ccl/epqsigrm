@@ -28,6 +28,4 @@ void partial_permutation_gen(uint16_t* Q);
 
 uint16_t random16(uint16_t n);
 
-void col_permute(matrix* G, const int rf, const int rr, const int cf, const int cr, uint16_t* Q);
-
 #endif 

@@ -110,7 +110,7 @@ void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
 }
 
 // make a matrix into rref form, inplace
-matrix* rref(matrix* self, matrix* syndrome)
+matrix* rref(matrix* self)
 {
     // Assume column is longer than row
     uint32_t succ_row_idx = 0;
@@ -131,9 +131,6 @@ matrix* rref(matrix* self, matrix* syndrome)
         // <succ_row_idx> th row <-> <row_idx> th row
         if(row_idx != succ_row_idx){
             row_interchange(self, succ_row_idx, row_idx);
-            if(syndrome != NULL){
-                row_interchange(syndrome, succ_row_idx, row_idx);
-            }
         }
                 
         // By adding <succ_row_idx> th row in the other nrows 
@@ -144,9 +141,6 @@ matrix* rref(matrix* self, matrix* syndrome)
 
             if(get_element(self, i, col_idx) == 1){
                 row_addition_internal(self, i, succ_row_idx);
-                if(syndrome != NULL){
-                    row_interchange(syndrome, i, succ_row_idx);
-                }
             }
         }
         row_idx = ++succ_row_idx;
@@ -325,7 +319,7 @@ void dual(matrix* self, matrix* dual_sys){
 
     init_zero(dual_sys);
 
-    rref(self, NULL);
+    rref(self);
     get_pivot(self, lead, lead_diff);
 
     // Fill not-identity part (P')
@@ -429,4 +423,27 @@ uint32_t size_in_byte(const matrix* self){
     // Assume ncols is a multiple of 8
     // otherwise, do a ceiling
     return self->nrows * (self->ncols + 7)/8;
+}
+
+void col_permute(matrix* self, const int r1, const int r2
+	, const int c1, const int c2, uint16_t* Q)
+{	
+	matrix* copy = new_matrix(r2 - r1, c2 - c1);
+	for (uint32_t r = 0; r < r2 - r1; r++)
+	{
+		for (uint32_t c = 0; c < c2 - c1; c++)
+		{
+			uint8_t bit = get_element(self, r1 + r, c1 + c);
+			set_element(copy, r, c, bit);
+		}
+	}
+	
+	for(uint32_t c = 0; c < c2 - c1; c++){
+		for(uint32_t r = 0; r < r2 - r1; r++){
+            uint8_t bit =  get_element(copy, r, Q[c]);
+			set_element(self, r1 + r, c1 + c, bit);
+		}
+	}
+
+	delete_matrix(copy);
 }
