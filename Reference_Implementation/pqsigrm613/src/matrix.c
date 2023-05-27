@@ -43,8 +43,7 @@ void randomize(matrix *self, uint8_t* randstr){
 
 void delete_matrix(matrix* self)
 {
-    for (uint32_t i = 0; i < self->nrows; i++)
-    {
+    for (uint32_t i = 0; i < self->nrows; i++) {
         free(self->elem[i]);
     }
     free(self->elem);
@@ -52,9 +51,6 @@ void delete_matrix(matrix* self)
 }
 
 void copy_matrix(matrix* self, matrix* src){
-    assert(self->nrows >= src->nrows);
-    assert(self->ncols == src->ncols);
-    
     for (uint32_t i = 0; i < src->nrows; i++)
     {
         memcpy(self->elem[i], src->elem[i], src->ncols);
@@ -62,46 +58,34 @@ void copy_matrix(matrix* self, matrix* src){
 }
 
 void export_matrix(matrix* self, uint8_t* dest){
-    assert(self->ncols % 8 == 0);
-
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
         for (uint32_t j = 0; j < self->ncols; j+=8){
-            dest[byte_index] = (self->elem[i][j+7] << 7) |
-                                (self->elem[i][j+6] << 6) |
-                                (self->elem[i][j+5] << 5) |
-                                (self->elem[i][j+4] << 4) |
-                                (self->elem[i][j+3] << 3) |
-                                (self->elem[i][j+2] << 2) |
-                                (self->elem[i][j+1] << 1) |
-                                self->elem[i][j];
-            byte_index++;
+            uint8_t byte = 0;
+            for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
+            {
+                byte |= (self->elem[i][j+k] << k);
+            }
+            dest[byte_index++] = byte; 
         }
     }
 }
 
 void import_matrix(matrix* self, const uint8_t* src){
-    assert(self->ncols % 8 == 0);
-    
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
         for (uint32_t j = 0; j < self->ncols; j+=8){
-            self->elem[i][j+7] = (src[byte_index] >> 7) & 1;
-            self->elem[i][j+6] = (src[byte_index] >> 6) & 1;
-            self->elem[i][j+5] = (src[byte_index] >> 5) & 1;
-            self->elem[i][j+4] = (src[byte_index] >> 4) & 1;
-            self->elem[i][j+3] = (src[byte_index] >> 3) & 1;
-            self->elem[i][j+2] = (src[byte_index] >> 2) & 1;
-            self->elem[i][j+1] = (src[byte_index] >> 1) & 1;
-            self->elem[i][j] = src[byte_index] & 1;
-            byte_index++;
+            uint8_t byte = src[byte_index++];
+            for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
+            {
+                self->elem[i][j+k] = ( byte >> k) & 1;
+            }
         }
     }
 }
 
 void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
-    for (uint32_t j = 0; j < self->ncols; j++)
-    {
+    for (uint32_t j = 0; j < self->ncols; j++) {
         uint8_t bit = get_element(self, r1, j) ^ get_element(self, r2, j);
         set_element(self, r1, j, bit);
     }
@@ -177,37 +161,24 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 // assume vector is transposed
 // self is also transposed
 void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
-    assert(mat->ncols == vec->ncols);
-    assert(self->ncols == mat->nrows);
 
-    for(uint32_t i = 0; i < mat->nrows; i++){
+    for(uint32_t i = 0; i < mat->nrows; i++) {
         uint8_t bit = 0;
-        for (uint32_t j = 0; j < mat->ncols; j++)
-        {
+        for (uint32_t j = 0; j < mat->ncols; j++) {
             bit ^= get_element(mat, i, j) & get_element(vec, 0, j);
         }
-        
         set_element(self, 0, i, bit);
     }
 }
 
-void mat_mat_add(matrix* self, matrix *mat1, matrix *mat2){
-    assert((mat1->nrows == mat2->nrows) && (mat1->ncols == mat2->ncols));
-    
-    for (uint32_t i = 0; i < self->nrows; i++)
-    {
-        for (uint32_t j = 0; j < self->ncols; j++)
-        {
-            uint8_t bit = get_element(mat1, i, j) ^ get_element(mat2, i, j);
-            set_element(self, i, j, bit);
-        }
-        
-        
+void vec_vec_add(matrix* self, matrix* vec){
+    for (uint32_t j = 0; j < self->ncols; j++) {
+        uint8_t bit = get_element(self, 0, j) ^ get_element(vec, 0, j);
+        set_element(self, 0, j, bit);
     }
 }
 
 void dual(matrix* self, matrix* dual_sys){
-
     uint16_t lead[self->nrows];
     uint16_t lead_diff[self->ncols - self->nrows];    
 
@@ -217,12 +188,15 @@ void dual(matrix* self, matrix* dual_sys){
     get_pivot(self, lead, lead_diff);
 
     // Fill not-identity part (P')
-    for (uint32_t row = 0; row < dual_sys->nrows; row++) 
-        for (uint32_t col = 0; col < self->nrows; col++) 
+    for (uint32_t row = 0; row < dual_sys->nrows; row++) {
+        for (uint32_t col = 0; col < self->nrows; col++) {
             set_element(dual_sys, row, lead[col], get_element(self, col, lead_diff[row]));
+        }
+    }
     
-    for (uint32_t row = 0; row < dual_sys->nrows; row++) 
-            set_element(dual_sys, row, lead_diff[row], 1);    
+    for (uint32_t row = 0; row < dual_sys->nrows; row++) {
+        set_element(dual_sys, row, lead_diff[row], 1);    
+    }
 }
 
 void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
@@ -234,19 +208,19 @@ void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
 void partial_replace(matrix* self, const uint32_t r1, const uint32_t r2,
         const uint32_t c1, const uint32_t c2, 
         matrix* src, const int r3, const int c3){
-    for(uint32_t i = 0; i < r2 - r1; i++)
-        for(uint32_t j = 0; j < c2 - c1; j++)
+    for(uint32_t i = 0; i < r2 - r1; i++) {
+        for(uint32_t j = 0; j < c2 - c1; j++) {
             set_element(self, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
+        }
+    }
 }
 
 void codeword(matrix* self, uint8_t* seed, matrix* dest){
-    for (uint32_t i = 0; i < self->nrows; i++)
-    {
+    for (uint32_t i = 0; i < self->nrows; i++) {
         uint32_t byte_index = i >> 3; // byte_index = bit_index / 8;
         uint32_t bit_offset = i & 7; // bit_offset = bit_index % 8;
         uint8_t rand_bit = (seed[byte_index] >> bit_offset) & 1;
-        if (rand_bit == 1)
-        {
+        if (rand_bit == 1) {
             for (uint32_t j = 0; j < self->ncols; j++)
             {
                 dest->elem[0][j] ^= self->elem[i][j];
@@ -256,11 +230,9 @@ void codeword(matrix* self, uint8_t* seed, matrix* dest){
 }
 
 uint8_t is_zero(matrix* self){
-    for (uint32_t i = 0; i < self->nrows; i++)
-    {
-        for (size_t j = 0; j < self->ncols; j++)
-        {
-            if(get_element(self, i, j) != 0){
+    for (uint32_t i = 0; i < self->nrows; i++) {
+        for (size_t j = 0; j < self->ncols; j++) {
+            if(get_element(self, i, j) != 0) {
                 return 0;
             }
         }
@@ -269,20 +241,17 @@ uint8_t is_zero(matrix* self){
 }
 
 void col_permute(matrix* self, const int r1, const int r2
-	, const int c1, const int c2, uint16_t* Q)
-{	
+	, const int c1, const int c2, uint16_t* Q) {	
 	matrix* copy = new_matrix(r2 - r1, c2 - c1);
-	for (uint32_t r = 0; r < r2 - r1; r++)
-	{
-		for (uint32_t c = 0; c < c2 - c1; c++)
-		{
+	for (uint32_t r = 0; r < r2 - r1; r++) {
+		for (uint32_t c = 0; c < c2 - c1; c++) {
 			uint8_t bit = get_element(self, r1 + r, c1 + c);
 			set_element(copy, r, c, bit);
 		}
 	}
 	
-	for(uint32_t c = 0; c < c2 - c1; c++){
-		for(uint32_t r = 0; r < r2 - r1; r++){
+	for(uint32_t c = 0; c < c2 - c1; c++) {
+		for(uint32_t r = 0; r < r2 - r1; r++) {
             uint8_t bit =  get_element(copy, r, Q[c]);
 			set_element(self, r1 + r, c1 + c, bit);
 		}

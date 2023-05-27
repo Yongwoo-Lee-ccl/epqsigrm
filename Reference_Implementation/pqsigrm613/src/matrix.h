@@ -35,6 +35,8 @@ void rref(matrix* self);
 void get_pivot(matrix* self, uint16_t *lead, uint16_t *lead_diff);
 
 void vec_mat_prod(matrix* self, matrix* mat,  matrix *vec);
+void vec_vec_add(matrix* self, matrix* vec);
+
 
 void dual(matrix* self, matrix* dual_sys);
 void row_interchange(matrix* mtx, uint32_t row_idx1, uint32_t row_idx2);
