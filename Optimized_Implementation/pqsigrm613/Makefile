@@ -13,6 +13,10 @@ else
     DBG_FLAGS = -O2 -DNDEBUG -Wall -Werror -Wunused-variable -Wunused-function
 endif
 
+
+%.o : %.c
+	$(CC) $(CFLAGS) $(DBG_FLAGS) -o $@ -c $< 
+	
 sign: ${OBJS} ./PQCgenKAT_sign.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
@@ -22,9 +26,8 @@ runtime: ${OBJS} ./runtime.c
 test: ${OBJS} ./test.c
 	$(CC) $(LDFLAGS) $(CFLAGS) $(DBG_FLAGS) -o $@ $^ $(LIBFLAGS)
 
-%.o : %.c
-	$(CC) $(CFLAGS) $(DBG_FLAGS) -o $@ -c $< 
 
+matrix.o : matrix.h
 rng.o : rng.h
 api.o : api.h
 
