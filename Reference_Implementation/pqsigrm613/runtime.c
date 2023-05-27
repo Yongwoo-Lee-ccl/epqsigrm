@@ -28,15 +28,9 @@ char    AlgName[] = "Enhanced_pqsigRM613";
 int
 main()
 {
-    char                fn_req[32], fn_rsp[32];
-    FILE                *fp_req, *fp_rsp;
-    unsigned char       seed[48];
-    unsigned char       msg[3300];
     unsigned char       entropy_input[48];
     unsigned char       *m, *sm, *m1;
     uint64_t  mlen, smlen, mlen1;
-    int                 count;
-    int                 done;
     unsigned char       pk[CRYPTO_PUBLICKEYBYTES], sk[CRYPTO_SECRETKEYBYTES];
     int                 ret_val;
 

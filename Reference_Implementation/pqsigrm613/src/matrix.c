@@ -51,7 +51,7 @@ void delete_matrix(matrix* self)
     free(self);
 }
 
-matrix* copy_matrix(matrix* self, matrix* src){
+void copy_matrix(matrix* self, matrix* src){
     assert(self->nrows >= src->nrows);
     assert(self->ncols == src->ncols);
     
@@ -59,8 +59,6 @@ matrix* copy_matrix(matrix* self, matrix* src){
     {
         memcpy(self->elem[i], src->elem[i], src->ncols);
     }
-    
-    return self;
 }
 
 void export_matrix(matrix* self, uint8_t* dest){
@@ -110,7 +108,7 @@ void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
 }
 
 // make a matrix into rref form, inplace
-matrix* rref(matrix* self)
+void rref(matrix* self)
 {
     // Assume column is longer than row
     uint32_t succ_row_idx = 0;
@@ -145,97 +143,6 @@ matrix* rref(matrix* self)
         }
         row_idx = ++succ_row_idx;
     }
-    //Gaussian elimination is finished. So return self.
-    return self;
-}
-
-matrix* transpose(matrix *self, matrix* dest){
-    for(uint32_t row = 0; row < dest->nrows; ++row){
-        for(uint32_t col = 0; col < dest->ncols; ++col){
-            set_element(dest, row, col, get_element(self, col, row));
-        }
-    }
-        
-    return dest;
-}
-
-int inverse(matrix *self, matrix *dest){
-    if(self->nrows != self->ncols)  return INV_FAIL;
-    if(dest->nrows != dest->ncols)  return INV_FAIL;
-    if(self->nrows != dest->nrows)  return INV_FAIL;
-
-    matrix* temp = new_matrix(self->nrows, self->ncols);
-    copy_matrix(temp, self);
-
-    uint32_t r, c;
-    init_zero(dest);
-
-    for (r = 0; r <  dest->nrows; ++r)
-    {
-        set_element(dest, r, r, 1);
-    }
-
-    for (c = 0; c < temp->ncols; ++c)
-    {
-        if(get_element(temp, c, c) == 0)
-        {    
-            for (r = c+1; r < self->nrows; ++r)
-            {
-                if(get_element(temp, r, c) != 0){
-                    row_interchange(temp, r, c);
-                    row_interchange(dest, r, c);
-                    break;
-                }
-            }
-            if(r >= temp->nrows)         return INV_FAIL;
-        }
-        
-        for(r = 0; r < temp->nrows; r++){
-            if(r == c) continue;
-            if(get_element(temp, r, c) != 0){
-                row_addition_internal(temp, r, c);
-                row_addition_internal(dest, r, c);
-            }
-        }
-    }
-    
-    // fprintf(stderr, "delete temp\n");
-    delete_matrix(temp);
-    return INV_SUCCESS;
-}
-
-int is_nonsingular(matrix *self){
-
-    matrix* temp = new_matrix(self->nrows, self->ncols);
-    copy_matrix(temp, self);
-
-    uint32_t r, c;
-
-    for (c = 0; c < temp->ncols; ++c)
-    {
-        if(get_element(temp, c, c) == 0)
-        {    
-            for (r = c+1; r < self->nrows; ++r)
-            {
-                if(get_element(temp, r, c) != 0){
-                    row_interchange(temp, r, c);
-                    break;
-                }
-            }
-            if(r >= temp->nrows)         
-                return INV_FAIL;
-        }
-
-        for(r = 0; r < temp->nrows; r++){
-            if(r == c) continue;
-            if(get_element(temp, r, c) != 0){
-                row_addition_internal(temp, r, c);
-            }
-        }
-    }
-
-    delete_matrix(temp);
-    return INV_SUCCESS;
 }
 
 // Input should be in rref form.
@@ -263,19 +170,6 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
         }
         else{
             lead_diff[diff_idx++] = col++;
-        }
-    }
-}
-
-void mat_mat_prod(matrix* self, matrix* mtx1, matrix* mtx2) {
-    assert(mtx1->ncols == mtx2->nrows);
-    
-    for (uint32_t i = 0; i < mtx1->nrows; i++){ 
-        for (uint32_t j = 0; j < mtx2->ncols; j++) {
-            uint8_t val = 0;
-            for (uint32_t k = 0; k < mtx1->ncols; k++)
-                val ^= get_element(mtx1, i, k) & get_element(mtx2, k, j);
-            set_element(self, i, j, val);
         }
     }
 }
@@ -372,57 +266,6 @@ uint8_t is_zero(matrix* self){
         }
     }
     return 1;
-}
-
-// Function to perform Gaussian elimination
-uint16_t rank(const matrix* self) {
-    matrix* copy = new_matrix(self->nrows, self->ncols);
-    for (uint16_t i = 0; i < self->nrows; ++i) {
-        for (uint16_t j = 0; j < self->ncols; ++j) {
-            set_element(copy, i, j, get_element(self, i, j));
-        }
-    }
-
-    uint16_t rank = 0;  // Initialize rank as 0
-
-    for (uint16_t r = 0; r < copy->nrows; ++r) {
-        uint16_t lead = 0;  // Current leading column
-
-        while (lead < copy->ncols) {
-            uint16_t i = r;
-
-            while (i < copy->nrows && get_element(copy, i, lead) == 0) {
-                ++i;
-            }
-
-            if (i < copy->nrows) {
-                row_interchange(copy, r, i);
-
-                for (uint16_t j = r + 1; j < copy->nrows; ++j) {
-                    if (get_element(copy, j, lead) != 0) {
-                        for (uint16_t k = lead; k < copy->ncols; ++k) {
-                            set_element(copy, j, k, get_element(copy, j, k) ^ get_element(copy, r, k));
-                        }
-                    }
-                }
-
-                ++rank;
-                break;
-            }
-
-            ++lead;
-        }
-    }
-
-    delete_matrix(copy);
-
-    return rank;
-}
-
-uint32_t size_in_byte(const matrix* self){
-    // Assume ncols is a multiple of 8
-    // otherwise, do a ceiling
-    return self->nrows * (self->ncols + 7)/8;
 }
 
 void col_permute(matrix* self, const int r1, const int r2
