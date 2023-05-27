@@ -1,28 +1,37 @@
 // common.c for pqsigRM
 #include "common.h"
 
+void SHAKE256(unsigned char *digest, const unsigned char *message, size_t message_len, size_t hashlen)
+{
+    EVP_MD_CTX *mdctx;
+    mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, EVP_shake256(), NULL);
+    EVP_DigestUpdate(mdctx, message, message_len);
+    EVP_DigestFinalXOF(mdctx, digest, hashlen);
+    EVP_MD_CTX_destroy(mdctx);
+}
+
 unsigned char* hash_message(unsigned char *s, const unsigned char *m, 
 	unsigned long long mlen, unsigned long long sign_i){
 	// Hash the given message
-	// syndrome s = h(h(M)|i) | (h(h(M)|i)) | ...
+	// syndrome s = h(h(M)|i)
+	unsigned char* buffer = (unsigned char*)malloc(mlen+sizeof(uint64_t));
+	memcpy(buffer, m, mlen);
+	memcpy(buffer + mlen, (unsigned char*)(&sign_i), sizeof(unsigned long long));
+	SHAKE256(s, buffer, mlen+sizeof(uint64_t), (1 + (CODE_N - CODE_K - 1)/64)*64/8);
 
-	SHA512(m, mlen, s);
-	*(unsigned long long*)(s+HASHSIZEBYTES) = sign_i;// concatenate i i.e. h(M)|i
-	SHA512(s, HASHSIZEBYTES+sizeof(unsigned long long), s); //h(h(M)|i)
-	
-	size_t idx;
-	for(idx=1; idx < 8; ++idx)
-		SHA512(s+HASHSIZEBYTES*(idx-1), HASHSIZEBYTES, s+HASHSIZEBYTES*idx);//(h(h(M)|i))
-	
 	return s;
 }
 
 int hamming_weight(matrix* error){
-	int wgt=0;
-	int i=0;
-	for(i=0; i < error->ncols; i++)
-		wgt += get_element(error, 0, i);
-	return wgt;
+
+    uint64_t wgt = 0;
+    unsigned char mask = 1;
+    for (int c = 0; c < error->ncols; ++c){
+        wgt += error->elem[0][c] & mask;
+    }
+
+    return wgt;
 }
 
 void swap16(uint16_t *Q, const int i, const int j){
@@ -32,24 +41,24 @@ void swap16(uint16_t *Q, const int i, const int j){
 	Q[j] = temp;
 }
 
-void permutation_gen(uint16_t *Q, int len){
-	int i,j; 
-	for(i=0; i<len; i++)
+void permutation_gen(uint16_t *Q, uint32_t len){
+	uint32_t i; 
+	for(i=0; i<len; i++){
 		Q[i] = i;
-	for(i=0; i<len; i++)
+	}
+	for(i=0; i<len; i++){
 		swap16(Q, i, random16(len));
+	}
 }
 
 int static compare(const void* first, const void* second){
-	
 	return (*(uint16_t*)first > *(uint16_t*)second)?1:-1;
 }
 
 void partial_permutation_gen(uint16_t* Q){
 	permutation_gen(Q, CODE_N/4);
-	uint16_t* partial_elem = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
-	uint16_t* partial_perm = (uint16_t*)malloc(sizeof(uint16_t)*PARM_P);
-		
+	uint16_t partial_elem[PARM_P];
+	uint16_t partial_perm[PARM_P];
 
 	memcpy(partial_perm, Q, sizeof(uint16_t)*PARM_P);
 	memcpy(partial_elem, Q, sizeof(uint16_t)*PARM_P);
@@ -57,17 +66,11 @@ void partial_permutation_gen(uint16_t* Q){
 	qsort(partial_elem, PARM_P, sizeof(uint16_t), compare);
 	qsort(Q, CODE_N/4, sizeof(uint16_t), compare);
 
-	int i;
-	for (i = 0; i < PARM_P; ++i)
+	for (uint32_t i = 0; i < PARM_P; ++i)
 	{
 		Q[partial_elem[i]] = partial_perm[i];
 	}
-
-	free(partial_elem);free(partial_perm);
 }
-
-
-
 
 uint16_t random16(uint16_t n){
 	uint16_t r;
@@ -75,16 +78,27 @@ uint16_t random16(uint16_t n){
 	return r%n;
 }
 
-void col_permute(matrix* m, const int rf, const int rr, const int cf, 
-	const int cr, uint16_t* Q)
-{
-	matrix* mcpy = new_matrix(m->nrows, m->ncols); 
-	memcpy(mcpy->elem, m->elem, m->alloc_size);
-	int r, c;
-	for(c = cf; c < cr; c++)
-		for(r = rf; r < rr; r++)
-			set_element(m, r, c, get_element(mcpy, r, cf + Q[c-cf]));
-	delete_matrix(mcpy);
+void col_permute(matrix* m, const int r1, const int r2
+	, const int c1, const int c2, uint16_t* Q)
+{	
+	matrix* copy = new_matrix(r2 - r1, c2 - c1);
+	for (uint32_t r = 0; r < r2 - r1; r++)
+	{
+		for (uint32_t c = 0; c < c2 - c1; c++)
+		{
+			uint8_t bit = get_element(m, r1 + r, c1 + c);
+			set_element(copy, r, c, bit);
+		}
+	}
+	
+	for(uint32_t c = 0; c < c2 - c1; c++){
+		for(uint32_t r = 0; r < r2 - r1; r++){
+            uint8_t bit =  get_element(copy, r, Q[c]);
+			set_element(m, r1 + r, c1 + c, bit);
+		}
+	}
+
+	delete_matrix(copy);
 }
 
 

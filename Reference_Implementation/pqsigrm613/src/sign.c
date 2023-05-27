@@ -2,104 +2,221 @@
 #include "common.h"
 #include "nearest_vector.h"
 
+void print_matrix_sign(matrix* mat, uint32_t r1, uint32_t r2, uint32_t c1, uint32_t c2){
+    printf("sign\n");
+    for (uint32_t i = r1; i < r2; i++)
+    {
+        for (size_t j = c1; j < c2; j++)
+        {
+            printf("%d", get_element(mat, i, j));
+        }printf("\n");
+    }
+}
+
+char* convertToHexString(const unsigned char* array, size_t length) {
+    char* hexString = (char*) malloc(length * 2 + 1);  // Allocate memory for the hex string
+
+    if (hexString == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < length; ++i) {
+        sprintf(hexString + (i * 2), "%02X", array[i]);  // Convert each byte to a 2-digit hexadecimal number
+    }
+
+    hexString[length * 2] = '\0';  // Null-terminate the string
+
+    return hexString;
+}
+
 int wgt(float *yc, float *yr)
 {
-	int i, w=0;
-	for(i=0; i<CODE_N; i++)
-		if(yc[i] != yr[i]) w++;
-	return w;
+    int i, w=0;
+    for(i=0; i<CODE_N; i++)
+        if(yc[i] != yr[i]) w++;
+    return w;
 }
 
-matrix* syndromeForMsg(matrix* scrambled_synd_mtx, matrix *Sinv, matrix *synd_mtx
-	, const unsigned char *m, unsigned long long mlen, unsigned long long sign_i)
+// void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep, matrix* Sinv)
+// {
+//     *Q             = (uint16_t*)(sk);
+//     *part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
+//     *part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
+//     import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
+//     import_matrix(Sinv, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2 + size_in_byte(Hrep));
+// }
+
+void import_sk(const unsigned char *sk, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2, matrix* Hrep)
 {
-	hash_message(synd_mtx->elem, m, mlen, sign_i);
-
-	vec_mat_prod(scrambled_synd_mtx, Sinv, synd_mtx);
-	return scrambled_synd_mtx;
+    *Q             = (uint16_t*)(sk);
+    *part_perm1 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N);
+    *part_perm2 = (uint16_t*)(sk+sizeof(uint16_t)*CODE_N + sizeof(uint16_t)*CODE_N/4);
+    import_matrix(Hrep, sk+sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
+/*
+* yr and yc are equal at the end.
+*/
+void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *Q){
+    for(uint32_t i=0; i < syndrome->ncols; i++) {
+        uint8_t bit = get_element(syndrome, 0, i);
+        yc[i] = (bit == 0)? 1.:-1.;
+    }
+    for(uint32_t i = syndrome->ncols; i < CODE_N; i++) {
+        yc[i] = 1.;
+    }
 
-void import_sk(const unsigned char *sk, matrix *Sinv
-		, uint16_t **Q, uint16_t **part_perm1, uint16_t **part_perm2
-		, uint16_t **s_lead)
-{
-	import_matrix(Sinv, sk);
-	*Q 			= (uint16_t*)(sk+Sinv->alloc_size);
-	*part_perm1 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N);
-	*part_perm2 = (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-					+sizeof(uint16_t)*CODE_N/4);
-	*s_lead 	= (uint16_t*)(sk+Sinv->alloc_size+sizeof(uint16_t)*CODE_N
-					+sizeof(uint16_t)*CODE_N/2);
-}
-
-void y_init(float *yc, float *yr, matrix* syndrome, uint16_t *s_lead){
-		int i;
-
-		for(i=0; i<CODE_N; i++) 
-			yr[i] = yc[i] = 1.;
-
-		for(i =0; i<CODE_N-CODE_K; i++) 
-			if(get_element(syndrome, 0, i) == 1) 
-				yr[s_lead[i]] = yc[s_lead[i]] = -1.;
+    for(uint32_t i =0; i < CODE_N; i++) {
+        yr[Q[i]] = yc[i];
+    }
+    for(uint32_t i =0; i < CODE_N; i++) {
+        yc[i] = yr[i];
+    }
 }
 
 int
 crypto_sign(unsigned char *sm, unsigned long long *smlen,
-	const unsigned char *m, unsigned long long mlen,
-	const unsigned char *sk){
+    const unsigned char *m, unsigned long long mlen,
+    const unsigned char *sk){
 
-	// read secret key(bit stream) into appropriate type.
-	matrix* Sinv = new_matrix(CODE_N-CODE_K, CODE_N-CODE_K);
-	uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
-	import_sk(sk, Sinv, &Q, &part_perm1, &part_perm2, &s_lead);
-	// Do signing, decode until the a error vector wt <= w is achieved
-	int i, j;
-	
-	unsigned long long sign_i;
+    // read secret key(bit stream) into appropriate type.
+    uint16_t *Q, *part_perm1, *part_perm2, *s_lead;
+    matrix* Hrep = new_matrix(K_REP, (1<<RM_R));
+    // matrix* Sinv = new_matrix(CODE_N - CODE_K - 1, CODE_N - CODE_K - 1);
 
-	// unsigned char sign[CODE_N];
-	matrix *synd_mtx= new_matrix(1, CODE_N - CODE_K);
-	matrix *scrambled_synd_mtx = new_matrix(1, CODE_N - CODE_K);
+    // import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep, Sinv);
+    import_sk(sk, &Q, &part_perm1, &part_perm2, Hrep);
+    
+    // Do signing, decode until the a error vector wt <= w is achieved
+    uint64_t sign_i;
+    matrix *challenge= new_matrix(1, CODE_N - CODE_K - 1);
+    matrix *syndrome = new_matrix(1, CODE_N - CODE_K - 1);
 
-	float *yc = (float*)malloc(sizeof(float)*CODE_N);
-	float *yr = (float*)malloc(sizeof(float)*CODE_N);
-	
-	init_decoding(CODE_N);
-	while(1){
-		//random number
-		randombytes((unsigned char*)&sign_i, sizeof(unsigned long long));
-		// Find syndrome
-		syndromeForMsg(scrambled_synd_mtx, Sinv, synd_mtx, m, mlen, sign_i);
-		y_init(yc, yr, scrambled_synd_mtx, s_lead);
-		// decode and find e
-		// In the recursive decoding procedure,
-		// Y is 1 when the received codeword is 0, o.w, -1
-		recursive_decoding_mod(yc, RM_R, RM_M, 0, CODE_N, part_perm1, part_perm2);
-		
-		// Check Hamming weight of e'
-		if(wgt(yr, yc) <= WEIGHT_PUB) break;
-	}
-	// compute Qinv*e'
-	matrix *sign = new_matrix(1, CODE_N);
-	for(i=0; i<CODE_N; i++){
-		set_element(sign, 0, i, (yr[Q[i]] != yc[Q[i]]));
-	}
+    float yc[CODE_N];
+    float yr[CODE_N];
+    
+    init_decoding(CODE_N);
+    uint32_t iter = 0;
+    uint8_t randstr[challenge->ncols/8];
 
-	// export message
-	// sing is (mlen, M, e, sign_i)
-	// M includes its length, i.e., mlen
-	*(unsigned long long*)sm = mlen;
-	memcpy(sm+sizeof(unsigned long long), m, mlen);
+    while(1){
+        // random number
+        randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
+        hash_message(randstr, m, mlen, sign_i);
+        randomize(challenge, randstr);
+        // Find syndrome Sinv * challenge
+        // vec_mat_prod(syndrome, Sinv, challenge);
+        syndrome = challenge;
+        // printf("syndrome:\n");
+        // for (uint32_t i = 0; i < syndrome->ncols; i++)
+        // {
+        //     printf("%d", get_element(syndrome, 0, i));
+        // }printf("\n");
 
-	memcpy(sm+sizeof(unsigned long long)+mlen, sign->elem, sign->alloc_size);
-	*(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->alloc_size) 
-		= sign_i;
+        y_init(yc, yr, syndrome, Q);
+        
+        // decode and find e
+        // In the recursive decoding procedure,
+        // Y is 1 when the received codeword is 0, o.w, -1
+        recursive_decoding_mod(yc, RM_R, RM_M, 0, CODE_N, part_perm1, part_perm2, Hrep);
+        
+        // Check Hamming weight of e'
+        if(wgt(yr, yc) <= WEIGHT_PUB) break;
+    }
 
-	*smlen = sizeof(unsigned long long) + mlen + sign->alloc_size + sizeof(unsigned long long);
-	
-	delete_matrix(Sinv);
-	delete_matrix(synd_mtx);	delete_matrix(scrambled_synd_mtx);
-	free(yr); free(yc);
-	return 0;	
+    // compute Qinv*e'
+    matrix *sign = new_matrix(1, CODE_N);
+    for(uint32_t i=0; i < CODE_N; i++){
+        set_element(sign, 0, i, (uint8_t)(yr[Q[i]] != yc[Q[i]]));
+        // set_element(sign, 0, i, (yc[Q[i]] >= 0)?0 : 1);
+    }
+
+    {// Decoding: verification
+        // generate RM code
+        matrix* Gm = new_matrix(CODE_K, CODE_N);
+        rm_gen(Gm, RM_R, RM_M, 0, CODE_K, 0, CODE_N);
+
+        // partial replacement
+        matrix* Grep = new_matrix((1<<RM_R) - K_REP, (1<<RM_R));
+        dual(Hrep, Grep);
+        //print_matrix_sign(Hrep, 0, Hrep->nrows, 0, Hrep->ncols);
+        //printf("\n^Hrep\n");
+        //print_matrix_sign(Grep, 0, Grep->nrows, 0, Grep->ncols);
+        //printf("\n^grep\n");
+        for (uint32_t i = 0; i < CODE_N; i += Grep->ncols)
+        {
+            partial_replace(Gm, K_REP, K_REP + Grep->nrows, i, i + Grep->ncols, Grep, 0, 0); 
+        }
+
+        // partial permutation
+        for (uint32_t i = 0; i < 4; ++i)
+        {
+            col_permute(Gm, 0, rm_dim[RM_R][RM_M -2], 
+                i*(CODE_N/4),(i+1)*(CODE_N/4), part_perm1);
+        }
+        col_permute(Gm, CODE_K - rm_dim[RM_R-2][RM_M-2], CODE_K, 3*CODE_N/4, CODE_N, part_perm2);
+        /*
+        for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm1[i]);
+        }printf("\n^ partperm1\n");
+        for (size_t i = 0; i < CODE_N/4 ; i++)
+        {
+            printf("%d ", part_perm2[i]);
+        }printf("\n^ partperm2\n");
+        */
+
+        // find dual 
+        // don't add a codeword from dual
+        matrix* Hm = new_matrix(CODE_N-CODE_K, CODE_N);
+        dual(Gm, Hm);
+        //print_matrix_sign(Hm, 1000, 1064, 2000, 2064);
+
+
+        // a codeword
+        matrix* codeword = new_matrix(1, CODE_N);
+        for(size_t i = 0; i < codeword->ncols; i++){
+            set_element(codeword, 0, i, (yc[Q[i]] >= 0)?0 : 1);
+        }
+        col_permute(Hm, 0, Hm->nrows, 0, Hm->ncols, Q);
+        rref(Hm, NULL);
+        //print_matrix_sign(Hm, 1000, 1064, 2000, 2064);
+
+        matrix* syndrome_test = new_matrix(1, Hm->nrows);
+        vec_mat_prod(syndrome_test, Hm, codeword);
+
+        
+        // mat_mat_add(syndrome_test, syndrome, syndrome_challenge);
+        uint8_t res = is_zero(syndrome_test);
+        //printf("is decoding ok?: %d\n", res);
+    }// Decoding: verification
+
+
+    // export message
+    // sign is (mlen, M, e, sign_i)
+    // M includes its length, i.e., mlen
+    *(unsigned long long*)sm = mlen;
+    memcpy(sm+sizeof(unsigned long long), m, mlen);
+    export_matrix(sign, sm+sizeof(unsigned long long)+mlen);
+
+    *(unsigned long long*)(sm + sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8) 
+        = sign_i;
+
+    *smlen = sizeof(unsigned long long) + mlen + sign->nrows * sign->ncols/8 + sizeof(unsigned long long);
+    
+    delete_matrix(Hrep);
+    delete_matrix(challenge);
+    delete_matrix(sign);
+
+// 추가시작
+//    delete_matrix(syndrome); 
+//    delete_matrix(Gm);          //왜 오류??
+//    delete_matrix(Grep);        //왜 오류??
+//    delete_matrix(Hm);          //왜 오류??
+//    delete_matrix(codeword);
+//    delete_matrix(syndrome_test);//왜 오류??
+// 추가끝
+
+    return 0;    
 }

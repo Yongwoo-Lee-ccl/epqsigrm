@@ -5,46 +5,52 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #define MATRIX_NULL 0 
-#define ELEMBLOCKSIZE 8
 
 #define INV_SUCCESS 1
 #define INV_FAIL 0
 
-#define getElement(A, i, j) 		(!!((A)->elem[(i) * (A)->rwdcnt + (j) / ELEMBLOCKSIZE] & (0x80 >> ((j) % ELEMBLOCKSIZE))))
-#define flipElement(A, i, j) 	((A)->elem[(i) * (A)->rwdcnt + (j) / ELEMBLOCKSIZE] ^= (0x80 >> ((j) % ELEMBLOCKSIZE)))
-#define setElement(A, i, j, val) 	((getElement((A), (i), (j)) == (val))? 0 : flipElement((A), (i),(j)))
-#define initZero(R) 			memset((R)->elem,0,(R)->alloc_size)
+#define get_element(A, i, j)  ((A->elem)[(i)][(j)])
+#define set_element(A, i, j, val) ((A->elem)[(i)][(j)] = (val))
 
 typedef struct {
-   int nrows;//number of rows.
-   int ncols;//number of columns.
-   int words_in_row;//number of words in a row
-   int alloc_size;//number of allocated bytes
-   unsigned char *elem;//row index.
+    uint16_t nrows;// number of rows.
+    uint16_t ncols;// number of columns.
+    uint8_t** elem;// elements.
 } matrix;
 
-matrix* new_matrix(int nrows, int ncols) ;
-void delete_matrix(matrix * mtx) ;
+matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;
+void init_zero(matrix *self);
+void delete_matrix(matrix *self) ;
+void randomize(matrix *self, uint8_t* randstr);
 
-matrix* rref(matrix* mtx);
-matrix* transpose(matrix *dest, matrix *src);
-int inverse(matrix *mtx, matrix *mtxInv);
-int is_nonsingular(matrix *mtx);
+matrix* copy_matrix(matrix* self, matrix* src);
+void export_matrix(matrix* self, uint8_t* dest);
+void import_matrix(matrix* self, const uint8_t* src);
 
-void get_pivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff);
+matrix* rref(matrix* self, matrix* syndrome);
+matrix* transpose(matrix *self, matrix* dest);
+int inverse(matrix *self, matrix *dest);
+int is_nonsingular(matrix *self);
 
-matrix* copy_matrix(matrix* dest, matrix* src);
+void get_pivot(matrix* self, uint16_t *lead, uint16_t *lead_diff);
 
-int mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod); 
-void vec_mat_prod(matrix *dest, matrix* m, matrix *vec);
-int mat_mat_add(matrix *m1, matrix *m2, matrix *res);
+void mat_mat_prod(matrix* self, matrix* mat1, matrix* mat2); 
+void vec_mat_prod(matrix* self, matrix* mat,  matrix *vec);
+void mat_mat_add(matrix* self, matrix* mat1, matrix *mat2);
 
-int export_matrix(unsigned char* dest, matrix* mtx);
-matrix* import_matrix(matrix* dest_mtx, const unsigned char* src);
+void dual(matrix* self, matrix* dual_sys);
+void row_interchange(matrix* mtx, uint32_t row_idx1, uint32_t row_idx2);
+void partial_replace(matrix* self, const uint32_t r1, const uint32_t c1,
+        const uint32_t r2, const uint32_t c2, 
+        matrix* src, const int r3, const int c3);
 
-void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff);
-void row_interchange(matrix* mtx, int row_idx1, int row_idx2);
-void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3);
+void codeword(matrix* self, uint8_t* seed, matrix* dest);
+uint8_t is_zero(matrix* self);
+
+uint16_t rank(const matrix* self);
+uint32_t size_in_byte(const matrix* self);
+
 #endif

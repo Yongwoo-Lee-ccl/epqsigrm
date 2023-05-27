@@ -1,284 +1,428 @@
 #include "matrix.h"
 
-matrix* new_matrix (int nrows, int ncols)
+matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 {
-  matrix* A;
-
-  A = (matrix*) malloc (sizeof (matrix));
-  A->ncols = ncols;
-  A->nrows = nrows;  
-  A->words_in_row = (1 + (ncols - 1) / ELEMBLOCKSIZE);
-  A->alloc_size = nrows * A->words_in_row * sizeof (unsigned char);
-  A->elem = (unsigned char *)malloc(A->alloc_size);
-  init_zero(A);
-  return A;
+    matrix* mat;
+    mat = (matrix*) malloc (sizeof (matrix));
+    mat->nrows = nrows; 
+    mat->ncols = ncols;
+    mat->elem = (uint8_t**)malloc(nrows * sizeof(uint8_t*));
+    for (uint32_t i = 0; i < nrows; i++)
+    {
+        mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
+    }
+    init_zero(mat);
+    return mat;
 }
 
-void partial_replace(matrix* dest, const int r1, const int c1,const int r2, const int c2, matrix* src, const int r3, const int c3){
-	for(int i = 0; i < r2 - r1; i++)
-		for(int j = 0; j < c2 - c1; j++)
-			set_element(dest, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
+
+void init_zero(matrix *self){
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        for (uint32_t j = 0; j < self->ncols; j++)
+        {
+            set_element(self, i, j, 0);
+        }
+    }
 }
 
-void delete_matrix(matrix* A)
+// generate a random matrix using a random string.
+// random string contains (nrows * ncols)-bit, while ncols is multiple of 8 
+void randomize(matrix *self, uint8_t* randstr){
+    uint32_t bit_index = 0;
+    for (uint32_t i = 0; i < self->nrows; i++){
+        for (uint32_t j = 0; j < self->ncols; j++){
+            uint32_t byte_index = bit_index >> 3; // byte_index = bit_index / 8;
+            uint32_t bit_offset = bit_index & 7; // bit_offset = bit_index % 8;
+            uint8_t rand_bit = (randstr[byte_index] >> bit_offset) & 1;
+            set_element(self, i, j, rand_bit);
+            bit_index++;
+        }
+    }
+}
+
+void delete_matrix(matrix* self)
 {
-  free(A->elem);
-  free(A);
+    free(self->elem);
+    free(self);
 }
 
-int mat_mat_prod(matrix * mtx1, matrix * mtx2, matrix * prod) {
-	int row, col, k;
-	int val;
-	if(mtx1->ncols != mtx2->nrows) 	return -1;
-	
-	for (row = 0; row < mtx1->nrows; row++)
-		for (col = 0; col < mtx2->ncols; col++) {
-			val = 0;
-			for (k = 0; k < mtx1->ncols; k++)
-				val ^= get_element(mtx1, row, k) & get_element(mtx2, k, col);
-			set_element(prod, row, col, val);
-		}
-	return 0;
+matrix* copy_matrix(matrix* self, matrix* src){
+    assert(self->nrows >= src->nrows);
+    assert(self->ncols == src->ncols);
+    
+    for (uint32_t i = 0; i < src->nrows; i++)
+    {
+        memcpy(self->elem[i], src->elem[i], src->ncols);
+    }
+    
+    return self;
 }
 
-//assume vector is transposed
-void vec_mat_prod(matrix *dest, matrix* m, matrix *vec){
-	unsigned char bit = 0;
-	unsigned char offset;
-	int row, col;
-	for(row = 0; row < m->nrows; row++){
-		bit = 0;
-		for(col=0; col < m->words_in_row - 1; col++)
-			bit ^= m->elem[row*m->words_in_row + col] & vec->elem[col];
-	
-		offset = 0xff << (ELEMBLOCKSIZE*m->words_in_row - m->ncols);
-		bit ^= (m->elem[row*m->words_in_row + col] & vec->elem[col])&offset;
+void export_matrix(matrix* self, uint8_t* dest){
+    assert(self->ncols % 8 == 0);
 
-		bit ^= (bit >> 4);
-		bit ^= (bit >> 2);
-		bit ^= (bit >> 1);
-		bit &= (unsigned char)1;
-		
-		set_element(dest, 0, row, bit);
-	}
+    uint32_t byte_index = 0;
+    for (uint32_t i = 0; i < self->nrows; i++){
+        for (uint32_t j = 0; j < self->ncols; j+=8){
+            dest[byte_index] = (self->elem[i][j+7] << 7) |
+                                (self->elem[i][j+6] << 6) |
+                                (self->elem[i][j+5] << 5) |
+                                (self->elem[i][j+4] << 4) |
+                                (self->elem[i][j+3] << 3) |
+                                (self->elem[i][j+2] << 2) |
+                                (self->elem[i][j+1] << 1) |
+                                self->elem[i][j];
+            byte_index++;
+        }
+    }
 }
 
-void row_interchange(matrix* A, int row_idx1, int row_idx2){
-	int col_idx;
-	unsigned char temp;
-	for(col_idx=0; col_idx<A->words_in_row; ++col_idx){
-		temp 	 								= A->elem[row_idx1 * A->words_in_row + col_idx];
-		A->elem[row_idx1 * A->words_in_row + col_idx] = A->elem[row_idx2 * A->words_in_row + col_idx];
-		A->elem[row_idx2 * A->words_in_row + col_idx] = temp;
-	}
+void import_matrix(matrix* self, const uint8_t* src){
+    assert(self->ncols % 8 == 0);
+    
+    uint32_t byte_index = 0;
+    for (uint32_t i = 0; i < self->nrows; i++){
+        for (uint32_t j = 0; j < self->ncols; j+=8){
+            self->elem[i][j+7] = (src[byte_index] >> 7) & 1;
+            self->elem[i][j+6] = (src[byte_index] >> 6) & 1;
+            self->elem[i][j+5] = (src[byte_index] >> 5) & 1;
+            self->elem[i][j+4] = (src[byte_index] >> 4) & 1;
+            self->elem[i][j+3] = (src[byte_index] >> 3) & 1;
+            self->elem[i][j+2] = (src[byte_index] >> 2) & 1;
+            self->elem[i][j+1] = (src[byte_index] >> 1) & 1;
+            self->elem[i][j] = src[byte_index] & 1;
+            byte_index++;
+        }
+    }
 }
 
-void row_add(matrix* A, int dest_row_idx, int adding_row_idx){
-	int col_idx;
-	for(col_idx=0; col_idx<A->words_in_row; ++col_idx){
-		A->elem[dest_row_idx * A->words_in_row + col_idx] 
-			^= A->elem[adding_row_idx * A->words_in_row + col_idx];
-	}
+void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
+    for (uint32_t j = 0; j < self->ncols; j++)
+    {
+        uint8_t bit = get_element(self, r1, j) ^ get_element(self, r2, j);
+        set_element(self, r1, j, bit);
+    }
 }
 
-matrix * rref(matrix* A)
+// make a matrix into rref form, inplace
+matrix* rref(matrix* self, matrix* syndrome)
 {
-	// Considering column is longer than row
-	int succ_row_idx=0;
-	int col_idx, row_idx=0;
-	int i;
-	for (col_idx = 0; col_idx < (A->ncols); ++col_idx) {
-		
-		// finding first row s.t. i th elem of the row is 1
-		for(; row_idx < A->nrows; ++row_idx)
-			if(get_element(A, row_idx, col_idx) == 1) 
-				break;
-		// When reaches the last row,
-		// increase column index and search again
-		if (row_idx == A->nrows){ 
-			row_idx=succ_row_idx;
-			continue;
-		}
-		// if row_idx is not succ_row_idx, 
-		// interchange between:
-		// <succ_row_idx> th row <-> <row_idx> th row
-		if(row_idx != succ_row_idx){
-			row_interchange(A, succ_row_idx, row_idx);
-		}
-				
-		// By adding <succ_row_idx> th row in the other nrows 
-		// s.t. A(i, <succ_row_idx>) == 1,
-		// making previous columns as element row.
-		for(i=0; i<A->nrows; ++i){
-			if(i == succ_row_idx) continue;
+    // Assume column is longer than row
+    uint32_t succ_row_idx = 0;
+    uint32_t col_idx, row_idx = 0;
+    for (col_idx = 0; col_idx < (self->ncols); ++col_idx) {
+        
+        // finding first row s.t. i th elem of the row is 1
+        for(; row_idx < self->nrows; ++row_idx)
+            if(get_element(self, row_idx, col_idx) == 1) 
+                break;
+        // When reaches the last row, increase column index and search again
+        if (row_idx == self->nrows){ 
+            row_idx = succ_row_idx;
+            continue;
+        }
+        // if row_idx is not succ_row_idx, 
+        // interchange between:
+        // <succ_row_idx> th row <-> <row_idx> th row
+        if(row_idx != succ_row_idx){
+            row_interchange(self, succ_row_idx, row_idx);
+            if(syndrome != NULL){
+                row_interchange(syndrome, succ_row_idx, row_idx);
+            }
+        }
+                
+        // By adding <succ_row_idx> th row in the other nrows 
+        // s.t. self(i, <succ_row_idx>) == 1,
+        // making previous columns as element row.
+        for(uint32_t i = 0; i < self->nrows; ++i){
+            if(i == succ_row_idx) continue;
 
-			if(get_element(A, i, col_idx) == 1){
-				row_add(A, i, succ_row_idx);
-			}
-		}
-		row_idx = ++succ_row_idx;
-	}
-	//Gaussian elimination is finished. So return A.
-	return A;
+            if(get_element(self, i, col_idx) == 1){
+                row_addition_internal(self, i, succ_row_idx);
+                if(syndrome != NULL){
+                    row_interchange(syndrome, i, succ_row_idx);
+                }
+            }
+        }
+        row_idx = ++succ_row_idx;
+    }
+    //Gaussian elimination is finished. So return self.
+    return self;
 }
 
-int inverse(matrix *mtx, matrix *mtxInv){
-	if(mtx->nrows != mtx->ncols) 			return INV_FAIL;
-	if(mtxInv->nrows != mtxInv->ncols) 	return INV_FAIL;
-	if(mtx->nrows != mtxInv->nrows) 		return INV_FAIL;
-
-	matrix* temp = new_matrix(mtx->nrows, mtx->ncols);
-	copy_matrix(temp, mtx);
-
-	int r, c;
-	for(r = 0; r< mtxInv->alloc_size;++r){
-		mtxInv->elem[r] = 0;
-	}
-	for ( r = 0; r <  mtxInv->nrows; ++r)
-	{
-		set_element(mtxInv, r, r, 1);
-	}
-
-	for (c = 0; c < temp->ncols; ++c)
-	{
-		if(get_element(temp, c, c) == 0)
-		{	
-			for (r = c+1; r < mtx->nrows; ++r)
-			{
-				if(get_element(temp, r, c) != 0){
-					row_interchange(temp, r, c);
-					row_interchange(mtxInv, r, c);
-					break;
-				}
-			}
-			if(r >= temp->nrows) 		return INV_FAIL;
-		}
-		
-
-		for(r = 0; r < temp->nrows; r++){
-			if(r == c) continue;
-			if(get_element(temp, r, c) != 0){
-				row_add(temp, r, c);
-				row_add(mtxInv, r, c);
-			}
-		}
-	}
-	delete_matrix(temp);
-	return INV_SUCCESS;
+matrix* transpose(matrix *self, matrix* dest){
+    for(uint32_t row = 0; row < dest->nrows; ++row){
+        for(uint32_t col = 0; col < dest->ncols; ++col){
+            set_element(dest, row, col, get_element(self, col, row));
+        }
+    }
+        
+    return dest;
 }
 
-int is_nonsingular(matrix *mtx){
+int inverse(matrix *self, matrix *dest){
+    if(self->nrows != self->ncols)  return INV_FAIL;
+    if(dest->nrows != dest->ncols)  return INV_FAIL;
+    if(self->nrows != dest->nrows)  return INV_FAIL;
 
-	matrix* temp = new_matrix(mtx->nrows, mtx->ncols);
-	copy_matrix(temp, mtx);
+    matrix* temp = new_matrix(self->nrows, self->ncols);
+    copy_matrix(temp, self);
 
-	int r, c;
-	unsigned char bit_one =	0x80;
+    uint32_t r, c;
+    init_zero(dest);
 
-	for (c = 0; c < temp->ncols; ++c)
-	{
-		if(get_element(temp, c, c) == 0)
-		{	
-			for (r = c+1; r < mtx->nrows; ++r)
-			{
-				if(get_element(temp, r, c) != 0){
-					row_interchange(temp, r, c);
-					break;
-				}
-			}
-			if(r >= temp->nrows) 		return INV_FAIL;
-		}
-		
+    for (r = 0; r <  dest->nrows; ++r)
+    {
+        set_element(dest, r, r, 1);
+    }
 
-		for(r = 0; r < temp->nrows; r++){
-			if(r == c) continue;
-			if(get_element(temp, r, c) != 0){
-				row_add(temp, r, c);
-			}
-		}
-	}
-	delete_matrix(temp);
-	return INV_SUCCESS;
+    for (c = 0; c < temp->ncols; ++c)
+    {
+        if(get_element(temp, c, c) == 0)
+        {    
+            for (r = c+1; r < self->nrows; ++r)
+            {
+                if(get_element(temp, r, c) != 0){
+                    row_interchange(temp, r, c);
+                    row_interchange(dest, r, c);
+                    break;
+                }
+            }
+            if(r >= temp->nrows)         return INV_FAIL;
+        }
+        
+        for(r = 0; r < temp->nrows; r++){
+            if(r == c) continue;
+            if(get_element(temp, r, c) != 0){
+                row_addition_internal(temp, r, c);
+                row_addition_internal(dest, r, c);
+            }
+        }
+    }
+    
+    // fprintf(stderr, "delete temp\n");
+    delete_matrix(temp);
+    return INV_SUCCESS;
 }
 
+int is_nonsingular(matrix *self){
 
-matrix* copy_matrix(matrix* dest, matrix* src){
-	if(dest->nrows != src->nrows || dest->ncols!=src->ncols) return MATRIX_NULL;
-	
-	memcpy(dest->elem, src->elem, dest->alloc_size);
-	return dest;
+    matrix* temp = new_matrix(self->nrows, self->ncols);
+    copy_matrix(temp, self);
+
+    uint32_t r, c;
+
+    for (c = 0; c < temp->ncols; ++c)
+    {
+        if(get_element(temp, c, c) == 0)
+        {    
+            for (r = c+1; r < self->nrows; ++r)
+            {
+                if(get_element(temp, r, c) != 0){
+                    row_interchange(temp, r, c);
+                    break;
+                }
+            }
+            if(r >= temp->nrows)         
+                return INV_FAIL;
+        }
+
+        for(r = 0; r < temp->nrows; r++){
+            if(r == c) continue;
+            if(get_element(temp, r, c) != 0){
+                row_addition_internal(temp, r, c);
+            }
+        }
+    }
+
+    delete_matrix(temp);
+    return INV_SUCCESS;
 }
 
-matrix* transpose(matrix *dest, matrix *src){
-	if((dest->nrows != src->ncols) || (dest->ncols != src->nrows))
-		return MATRIX_NULL;
-	int row, col;
-	for(row=0; row < dest->nrows; ++row)
-		for(col=0; col < dest->ncols; ++col)
-			set_element(dest, row, col, get_element(src, col, row));
-	return dest;
+// Input should be in rref form.
+void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
+    uint16_t row=0, col=0;
+    uint16_t lead_idx=0, diff_idx=0;
+
+    while((col < self->ncols) 
+            && (row < self->nrows) 
+            && (lead_idx < self->nrows) 
+            && (diff_idx < (self->ncols - self->nrows))){
+
+        if(get_element(self, row, col) == (uint8_t)1){
+            lead[lead_idx++] = col++;
+            row++;
+        }
+        else{
+            lead_diff[diff_idx++] = col++;
+        }
+    }
+
+    while(col < self->ncols){
+        if(lead_idx < self->nrows) {
+            lead[lead_idx++] = col++;
+        }
+        else{
+            lead_diff[diff_idx++] = col++;
+        }
+    }
 }
 
-// Exports a matrix into unsigned char destination.
-int export_matrix(unsigned char* dest, matrix* src_mtx){
-	memcpy(dest, src_mtx->elem, src_mtx->alloc_size);
-	return src_mtx->alloc_size;
+void mat_mat_prod(matrix* self, matrix* mtx1, matrix* mtx2) {
+    assert(mtx1->ncols == mtx2->nrows);
+    
+    for (uint32_t i = 0; i < mtx1->nrows; i++){ 
+        for (uint32_t j = 0; j < mtx2->ncols; j++) {
+            uint8_t val = 0;
+            for (uint32_t k = 0; k < mtx1->ncols; k++)
+                val ^= get_element(mtx1, i, k) & get_element(mtx2, k, j);
+            set_element(self, i, j, val);
+        }
+    }
 }
 
-matrix* import_matrix(matrix* dest_mtx, const unsigned char* src){
-	memcpy(dest_mtx->elem, src, dest_mtx->alloc_size);
+// assume vector is transposed
+// self is also transposed
+void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
+    assert(mat->ncols == vec->ncols);
+    assert(self->ncols == mat->nrows);
 
-	return dest_mtx;
+    for(uint32_t i = 0; i < mat->nrows; i++){
+        uint8_t bit = 0;
+        for (uint32_t j = 0; j < mat->ncols; j++)
+        {
+            bit ^= get_element(mat, i, j) & get_element(vec, 0, j);
+        }
+        
+        set_element(self, 0, i, bit);
+    }
 }
 
-int mat_mat_add(matrix *m1, matrix *m2, matrix *res){
-	if((m1->nrows != m2->nrows) || (m1->ncols != m2->ncols))
-		return -1;
-	
-	for(int i =0; i< res->alloc_size; i++)
-		res->elem[i] = (m1->elem[i])^(m2->elem[i]);
-
-	return 0;
+void mat_mat_add(matrix* self, matrix *mat1, matrix *mat2){
+    assert((mat1->nrows == mat2->nrows) && (mat1->ncols == mat2->ncols));
+    
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        for (uint32_t j = 0; j < self->ncols; j++)
+        {
+            uint8_t bit = get_element(mat1, i, j) ^ get_element(mat2, i, j);
+            set_element(self, i, j, bit);
+        }
+        
+        
+    }
 }
 
-void get_pivot(matrix* mtx, uint16_t *lead, uint16_t *lead_diff){
-	int row=0, col=0;
-	int lead_idx=0, diff_idx=0;
-	while((col < mtx->ncols) && (row < mtx->nrows) && (lead_idx < mtx->nrows) && (diff_idx < (mtx->ncols - mtx->nrows))){
-		if(get_element(mtx, row, col) == 1){
-			lead[lead_idx++] = col;
-			row++;
-		}
-		else{
-			lead_diff[diff_idx++] =col;
-		}
-		col++;
-	}
+void dual(matrix* self, matrix* dual_sys){
 
-	while(col < mtx->ncols){
-		lead_diff[diff_idx++]=col++;
-	}
+    uint16_t lead[self->nrows];
+    uint16_t lead_diff[self->ncols - self->nrows];    
+
+    init_zero(dual_sys);
+
+    rref(self, NULL);
+    get_pivot(self, lead, lead_diff);
+
+    // Fill not-identity part (P')
+    for (uint32_t row = 0; row < dual_sys->nrows; row++) 
+        for (uint32_t col = 0; col < self->nrows; col++) 
+            set_element(dual_sys, row, lead[col], get_element(self, col, lead_diff[row]));
+    
+    for (uint32_t row = 0; row < dual_sys->nrows; row++) 
+            set_element(dual_sys, row, lead_diff[row], 1);    
 }
 
-void dual(matrix* G, matrix* H_sys, uint16_t *lead, uint16_t *lead_diff){
-	int row, col, flg = 0; 
-	rref(G);
-	if(lead == 0 || lead_diff == 0){
-		lead = (uint16_t*)malloc(sizeof(uint16_t)*G->nrows);
-		lead_diff = (uint16_t*)malloc(sizeof(uint16_t)*(G->ncols - G->nrows));	
-		flg = 1;
-	}
-	get_pivot(G, lead, lead_diff);
-	// Fill not-identity part (P')
-	for ( row = 0; row < H_sys->nrows; row++) 
-		for ( col = 0; col < G->nrows; col++) 
-			set_element(H_sys, row, lead[col], get_element(G, col, lead_diff[row]));
+void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
+    uint8_t* temp = self->elem[row1];
+    self->elem[row1] = self->elem[row2];
+    self->elem[row2] = temp;
+}
 
-	for ( row = 0; row < H_sys->nrows; row++) 
-			set_element(H_sys, row, lead_diff[row], 1);
-	
-	if(flg){
-		free(lead);
-		free(lead_diff);
-	}
+void partial_replace(matrix* self, const uint32_t r1, const uint32_t r2,
+        const uint32_t c1, const uint32_t c2, 
+        matrix* src, const int r3, const int c3){
+    for(uint32_t i = 0; i < r2 - r1; i++)
+        for(uint32_t j = 0; j < c2 - c1; j++)
+            set_element(self, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
+}
+
+void codeword(matrix* self, uint8_t* seed, matrix* dest){
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        uint32_t byte_index = i >> 3; // byte_index = bit_index / 8;
+        uint32_t bit_offset = i & 7; // bit_offset = bit_index % 8;
+        uint8_t rand_bit = (seed[byte_index] >> bit_offset) & 1;
+        if (rand_bit == 1)
+        {
+            for (uint32_t j = 0; j < self->ncols; j++)
+            {
+                dest->elem[0][j] ^= self->elem[i][j];
+            }
+        }
+    }
+}
+
+uint8_t is_zero(matrix* self){
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        for (size_t j = 0; j < self->ncols; j++)
+        {
+            if(get_element(self, i, j) != 0){
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+// Function to perform Gaussian elimination
+uint16_t rank(const matrix* self) {
+    matrix* copy = new_matrix(self->nrows, self->ncols);
+    for (uint16_t i = 0; i < self->nrows; ++i) {
+        for (uint16_t j = 0; j < self->ncols; ++j) {
+            set_element(copy, i, j, get_element(self, i, j));
+        }
+    }
+
+    uint16_t rank = 0;  // Initialize rank as 0
+
+    for (uint16_t r = 0; r < copy->nrows; ++r) {
+        uint16_t lead = 0;  // Current leading column
+
+        while (lead < copy->ncols) {
+            uint16_t i = r;
+
+            while (i < copy->nrows && get_element(copy, i, lead) == 0) {
+                ++i;
+            }
+
+            if (i < copy->nrows) {
+                row_interchange(copy, r, i);
+
+                for (uint16_t j = r + 1; j < copy->nrows; ++j) {
+                    if (get_element(copy, j, lead) != 0) {
+                        for (uint16_t k = lead; k < copy->ncols; ++k) {
+                            set_element(copy, j, k, get_element(copy, j, k) ^ get_element(copy, r, k));
+                        }
+                    }
+                }
+
+                ++rank;
+                break;
+            }
+
+            ++lead;
+        }
+    }
+
+    delete_matrix(copy);
+
+    return rank;
+}
+
+uint32_t size_in_byte(const matrix* self){
+    // Assume ncols is a multiple of 8
+    // otherwise, do a ceiling
+    return self->nrows * (self->ncols + 7)/8;
 }
