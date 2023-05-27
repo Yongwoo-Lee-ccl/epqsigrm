@@ -43,6 +43,10 @@ void randomize(matrix *self, uint8_t* randstr){
 
 void delete_matrix(matrix* self)
 {
+    for (uint32_t i = 0; i < self->nrows; i++)
+    {
+        free(self->elem[i]);
+    }
     free(self->elem);
     free(self);
 }
