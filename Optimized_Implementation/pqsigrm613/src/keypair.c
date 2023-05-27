@@ -47,7 +47,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	// check if Hrep has a odd row.
 	while(1){
 		randombytes(randstr, Grep->nrows * Grep->colsize * 8);
-		randomize(Grep, randstr);
+		import_matrix(Grep, randstr);
 		
 		dual(Grep, Hrep);
 		for (uint32_t i = 0; i < Hrep->nrows; i++)
@@ -109,7 +109,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 			randombytes(randstr_for_row, Gm->ncols / 8);
 		}
 		
-		randomize(random_row, randstr_for_row);
+		import_matrix(random_row, randstr_for_row);
 		partial_replace(Gm, i, i+1, 0, Gm->ncols, random_row, 0, 0);
 	}
 

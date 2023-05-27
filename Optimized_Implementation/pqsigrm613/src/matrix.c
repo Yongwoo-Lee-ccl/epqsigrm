@@ -131,10 +131,18 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
 
     for(uint32_t i = 0; i < mat->nrows; i++) {
-        uint8_t bit = 0;
-        for (uint32_t j = 0; j < mat->ncols; j++) {
-            bit ^= get_element(mat, i, j) & get_element(vec, 0, j);
+        uint64_t block_sum = 0ULL;
+        for (uint32_t j = 0; j < mat->colsize; j++) {
+            block_sum ^= mat->elem[i][j] & vec->elem[0][j];
         }
+        uint64_t bit = block_sum;
+        bit ^= bit >>32;
+        bit ^= bit >>16;
+        bit ^= bit >>8;
+        bit ^= bit >>4;
+        bit ^= bit >>2;
+        bit ^= bit >>1;
+        bit &= 1ULL;
         set_element(self, 0, i, bit);
     }
 }
