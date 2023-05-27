@@ -15,6 +15,7 @@
 
 // #define PARM_P 561U
 
+// TO BE REMOVED: For fast test
 #define RM_R 5U
 #define RM_M 11U
 
@@ -24,6 +25,7 @@
 #define CODE_N 2048U
 
 #define PARM_P 128U
+// TO BE REMOVED: up to here
 
 #define WEIGHT_PUB 300U    
 #define HASHSIZEBYTES 64U 
