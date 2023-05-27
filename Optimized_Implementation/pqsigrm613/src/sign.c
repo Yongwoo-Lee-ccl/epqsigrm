@@ -62,7 +62,7 @@ crypto_sign(unsigned char *sm, unsigned long long *smlen,
         // random number
         randombytes((unsigned char*)&sign_i, sizeof(uint64_t));
         hash_message(randstr, m, mlen, sign_i);
-        randomize(challenge, randstr);
+        import_matrix(challenge, randstr);
         
         // Find syndrome Sinv * challenge
         y_init(yc, yr, challenge, Q);

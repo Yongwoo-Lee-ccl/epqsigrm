@@ -25,7 +25,6 @@ typedef struct {
 matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;
 void init_zero(matrix *self);
 void delete_matrix(matrix *self) ;
-void randomize(matrix *self, uint8_t* randstr);
 
 void copy_matrix(matrix* self, matrix* src);
 void export_matrix(matrix* self, uint8_t* dest);

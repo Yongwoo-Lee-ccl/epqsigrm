@@ -38,7 +38,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     // syndrome by hash
     uint8_t randstr[syndrome_by_hash->ncols/8 + 1];
     hash_message(randstr, m_rx, mlen_rx, sign_i);
-    randomize(syndrome_by_hash, randstr);
+    import_matrix(syndrome_by_hash, randstr);
 
     // syndrome by sign
     matrix* sign_tail = new_matrix(1, non_identity_hpub->ncols);

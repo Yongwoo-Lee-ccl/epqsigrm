@@ -24,21 +24,6 @@ void init_zero(matrix *self){
     }
 }
 
-// generate a random matrix using a random string.
-// random string contains (nrows * ncols)-bit, while ncols is multiple of 8 
-void randomize(matrix *self, uint8_t* randstr){
-    uint32_t bit_index = 0;
-    for (uint32_t i = 0; i < self->nrows; i++){
-        for (uint32_t j = 0; j < self->ncols; j++){
-            uint32_t byte_index = bit_index >> 3; // byte_index = bit_index / 8;
-            uint32_t bit_offset = bit_index & 7; // bit_offset = bit_index % 8;
-            uint8_t rand_bit = (randstr[byte_index] >> bit_offset) & 1;
-            set_element(self, i, j, rand_bit);
-            bit_index++;
-        }
-    }
-}
-
 void delete_matrix(matrix* self)
 {
     for (uint32_t i = 0; i < self->nrows; i++) {
