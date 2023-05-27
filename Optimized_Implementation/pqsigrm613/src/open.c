@@ -48,11 +48,10 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     // add sign_head
     vec_vec_add(syndrome_by_e, sign);
 
-    for(uint32_t i=0; i < CODE_N-CODE_K - 1; ++i){
-        if(get_element(syndrome_by_hash, 0, i) != get_element(syndrome_by_e, 0, i)){
-            return VERIF_REJECT;
-        }
+    if(!vec_vec_is_equal(syndrome_by_e, syndrome_by_hash)){
+        return VERIF_REJECT;
     }
+    
 
     memcpy(m, m_rx, mlen_rx);
     *mlen = mlen_rx;

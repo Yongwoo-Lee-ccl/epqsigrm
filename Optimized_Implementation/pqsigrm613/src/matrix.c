@@ -156,6 +156,22 @@ void vec_vec_add(matrix* self, matrix* vec){
     }
 }
 
+uint8_t vec_vec_is_equal(matrix* self, matrix *vec){
+     for (uint32_t j = 0; j < self->colsize - 1; j++) {
+        if (self->elem[0][j] != vec->elem[0][j]){
+            return 0;
+        }
+    }
+    for (uint32_t j = 8*(self->colsize - 1); j < self->ncols; j++)
+    {
+        if (get_element(self, 0, j) != get_element(self, 0, j)){
+            return 0;
+        }
+    }
+    
+    return 1;   
+}
+
 void dual(matrix* self, matrix* dual_sys){
     uint16_t lead[self->nrows];
     uint16_t lead_diff[self->ncols - self->nrows];    
