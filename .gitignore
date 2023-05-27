@@ -13,4 +13,5 @@ runtime
 *.py
 *.txt
 *old*
+*tags
 .vscode/
