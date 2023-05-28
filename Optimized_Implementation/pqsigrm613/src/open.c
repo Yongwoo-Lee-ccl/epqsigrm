@@ -44,6 +44,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     matrix* sign_tail = new_matrix(1, non_identity_hpub->ncols);
     partial_replace(sign_tail, 0, 1, 0, sign_tail->ncols,
         sign, 0, non_identity_hpub->nrows);
+    printf("closize: %d\n", non_identity_hpub->colsize);
     vec_mat_prod(syndrome_by_e, non_identity_hpub, sign_tail);
     // add sign_head
     vec_vec_add(syndrome_by_e, sign);

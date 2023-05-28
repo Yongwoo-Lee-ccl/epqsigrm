@@ -1,7 +1,7 @@
 CC = gcc
 
 LDFLAGS =  -L/usr/local/lib
-CFLAGS = -I/usr/local/include -Wall -Werror -Wunused-variable -Wunused-function
+CFLAGS = -I/usr/local/include -Wall -Werror -Wunused-variable -Wunused-function -mavx2
 LIBFLAGS = -lcrypto -lssl -lm
 CFILES := $(shell find src -name '*.c' | sed -e 's/\.c/\.o/')
 

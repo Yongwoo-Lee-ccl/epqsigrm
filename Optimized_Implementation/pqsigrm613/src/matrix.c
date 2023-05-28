@@ -1,3 +1,5 @@
+#include <immintrin.h>  // For AVX2 instructions
+
 #include "matrix.h"
 
 inline uint64_t xor_bits(uint64_t value) {
@@ -8,6 +10,28 @@ inline uint64_t xor_bits(uint64_t value) {
     value ^= value >> 2;
     value ^= value >> 1;
     return value & 1ULL;
+}
+
+uint64_t xor256(__m256i *value) {
+    // Split the 256-bit value into 64-bit parts
+    uint64_t parts[4];
+    for (int i = 0; i < 4; ++i) {
+        parts[i] = _mm256_extract_epi64(*value, i);
+    }
+
+    // XOR all 64-bit parts together
+    uint64_t xor64 = parts[0] ^ parts[1] ^ parts[2] ^ parts[3];
+
+    // XOR all bits of the resulting 64-bit value
+    xor64 ^= xor64 >> 32;
+    xor64 ^= xor64 >> 16;
+    xor64 ^= xor64 >> 8;
+    xor64 ^= xor64 >> 4;
+    xor64 ^= xor64 >> 2;
+    xor64 ^= xor64 >> 1;
+
+    // Return the least significant bit
+    return xor64 & 1;
 }
 
 matrix* new_matrix (uint32_t nrows, uint32_t ncols)
@@ -138,7 +162,7 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 
 // assume vector is transposed
 // self is also transposed
-void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
+void vec_mat_prod_64(matrix* self, matrix* mat, matrix* vec){
 
     for(uint32_t i = 0; i < mat->nrows; i++) {
         uint64_t block_sum = 0ULL;
@@ -148,6 +172,31 @@ void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
         block_sum = xor_bits(block_sum);
         set_element(self, 0, i, block_sum);
     }
+}
+
+void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
+    for(uint32_t i = 0; i < mat->nrows; i++) {
+        __m256i block_sum_avx = _mm256_setzero_si256();
+        for (uint32_t j = 0; j < mat->colsize; j += 4) {
+            __m256i mat_elem = _mm256_load_si256((__m256i*) &mat->elem[i][j]);
+            __m256i vec_elem = _mm256_load_si256((__m256i*) &vec->elem[0][j]);
+            block_sum_avx = _mm256_xor_si256(block_sum_avx, _mm256_and_si256(mat_elem, vec_elem));
+        }
+        // Now we need to horizontally XOR all the 64-bit integers in block_sum_avx
+        uint64_t final_result = xor256(&block_sum_avx);
+
+        uint64_t block_sum_64 = 0ULL;
+        for (uint32_t j = (mat->colsize/4)*4; j < mat->colsize; j++) {
+            block_sum_64 ^= mat->elem[i][j] & vec->elem[0][j];
+        }
+
+        final_result ^= xor_bits(block_sum_64);
+        set_element(self, 0, i, final_result);
+    }
+}
+
+void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
+    vec_mat_prod_64(self, mat, vec);
 }
 
 void vec_vec_add(matrix* self, matrix* vec){
@@ -202,6 +251,16 @@ void row_interchange(matrix* self, uint32_t row1, uint32_t row2) {
 void partial_replace(matrix* self, const uint32_t r1, const uint32_t r2,
         const uint32_t c1, const uint32_t c2, 
         matrix* src, const int r3, const int c3){
+    
+    if((c1 % 64 == 0) && (c2 % 64 == 0) && (c3 % 64 == 0)){
+        for(uint32_t i = 0; i < r2 - r1; i++) {
+            for(uint32_t j = 0; j < c2 - c1; j+=64) {
+                self->elem[r1+i][(c1+j)/64] = src->elem[r3+i][(c3+j)/64];
+            }
+        }
+        return;
+    }
+
     for(uint32_t i = 0; i < r2 - r1; i++) {
         for(uint32_t j = 0; j < c2 - c1; j++) {
             set_element(self, r1 + i, c1+j, get_element(src, r3 + i, c3 + j));
