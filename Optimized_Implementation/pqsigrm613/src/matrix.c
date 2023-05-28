@@ -87,9 +87,8 @@ void import_matrix(matrix* self, const uint8_t* src){
 }
 
 void row_addition_internal(matrix* self, const uint32_t r1, const uint32_t r2){
-    for (uint32_t j = 0; j < self->ncols; j++) {
-        uint8_t bit = get_element(self, r1, j) ^ get_element(self, r2, j);
-        set_element(self, r1, j, bit);
+    for (uint32_t j = 0; j < self->colsize; j++) {
+        self->elem[r1][j] ^= self->elem[r2][j];
     }
 }
 
