@@ -200,10 +200,24 @@ void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
 }
 
 void vec_vec_add(matrix* self, matrix* vec){
-    for (uint32_t j = 0; j < self->colsize; j++) {
-        self->elem[0][j] ^= vec->elem[0][j];
+    uint32_t j;
+    uint64_t *s = self->elem[0];
+    uint64_t *v = vec->elem[0];
+    __m256i *s256 = (__m256i*)s;
+    __m256i *v256 = (__m256i*)v;
+
+    for (j = 0; j < self->colsize; j+=4){
+        __m256i s_val = _mm256_loadu_si256(&s256[j/4]);
+        __m256i v_val = _mm256_loadu_si256(&v256[j/4]);
+        __m256i result = _mm256_xor_si256(s_val, v_val);
+        _mm256_storeu_si256(&s256[j/4], result);
+    }
+
+    for (; j < self->colsize; ++j) {
+        s[j] ^= v[j];
     }
 }
+
 
 uint8_t vec_vec_is_equal(matrix* self, matrix *vec){
      for (uint32_t j = 0; j < self->colsize - 1; j++) {
