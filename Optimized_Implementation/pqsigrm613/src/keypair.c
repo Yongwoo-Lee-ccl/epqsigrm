@@ -12,10 +12,6 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
-void export_pk(unsigned char *pk, matrix *Hpub){
-	export_matrix(Hpub, pk);
-}
-
 int
 crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	// nrows of Gm is set to K + 1 for public key
@@ -158,13 +154,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 	rref(Hpub);
 
-	matrix* non_identity_hpub = new_matrix(Hpub->nrows, Hpub->ncols - Hpub->nrows);
+	matrix* non_identity_hpub = new_matrix_with_pool(Hpub->nrows, Hpub->ncols - Hpub->nrows, pk);
     partial_replace(non_identity_hpub, 0, non_identity_hpub->nrows, 
         0, non_identity_hpub->ncols, 
         Hpub, 0, Hpub->nrows);
 
     export_sk(sk, Q, part_perm1, part_perm2, Hrep);
-    export_pk(pk, non_identity_hpub);
 
 	delete_matrix(Gm);
 	delete_matrix(Hm);
