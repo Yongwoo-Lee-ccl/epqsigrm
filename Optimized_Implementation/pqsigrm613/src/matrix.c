@@ -149,17 +149,6 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 
 // assume vector is transposed
 // self is also transposed
-void vec_mat_prod_64(matrix* self, matrix* mat, matrix* vec){
-    for(uint32_t i = 0; i < mat->nrows; i++) {
-        uint64_t block_sum = 0ULL;
-        for (uint32_t j = 0; j < mat->colsize; j++) {
-            block_sum ^= mat->elem[i][j] & vec->elem[0][j];
-        }
-        block_sum = xor_bits(block_sum);
-        set_element(self, 0, i, block_sum);
-    }
-}
-
 void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
     for(uint32_t i = 0; i < mat->nrows; i++) {
         uint32_t j;
@@ -178,8 +167,8 @@ void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
 
         uint64_t block_sum_64 = xor256(&block_sum_avx);
 
-        for (; j < self->colsize; ++j) {
-            block_sum_64 ^= m[j] & v[j];
+        for (; j < mat->colsize; j++) {
+            block_sum_64 ^= mat->elem[i][j] & vec->elem[0][j];
         }
 
         // Now we need to horizontally XOR all the 64-bit integers
@@ -188,9 +177,24 @@ void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
     }
 }
 
+void vec_mat_prod_64(matrix* self, matrix* mat, matrix* vec){
+    for(uint32_t i = 0; i < mat->nrows; i++) {
+        uint64_t block_sum = 0ULL;
+        for (uint32_t j = 0; j < mat->colsize; j++) {
+            block_sum ^= mat->elem[i][j] & vec->elem[0][j];
+        }
+        block_sum = xor_bits(block_sum);
+        set_element(self, 0, i, block_sum);
+    }
+}
+
 void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
+    if (mat->colsize < 4)
+    {
+        vec_mat_prod_64(self, mat, vec);
+        return;
+    }
     vec_mat_prod_avx256(self, mat, vec);
-    // vec_mat_prod_64(self, mat, vec);
 }
 
 void vec_vec_add(matrix* self, matrix* vec){
