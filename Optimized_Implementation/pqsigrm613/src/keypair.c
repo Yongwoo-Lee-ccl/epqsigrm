@@ -12,10 +12,6 @@ void export_sk(unsigned char *sk,uint16_t *Q, uint16_t *part_perm1, uint16_t* pa
 	export_matrix(Hrep, sk + sizeof(uint16_t)*CODE_N + (sizeof(uint16_t)*CODE_N/4)*2);
 }
 
-void export_pk(unsigned char *pk, matrix *Hpub){
-	export_matrix(Hpub, pk);
-}
-
 int
 crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	// nrows of Gm is set to K + 1 for public key
@@ -42,12 +38,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	matrix* Hrep = new_matrix(K_REP, 1<<RM_R);
 
 	uint8_t is_odd = 0;
-	uint8_t randstr[Grep->ncols * Grep->nrows/8];
+	uint8_t randstr[Grep->nrows * Grep->colsize * 8];
 
 	// check if Hrep has a odd row.
 	while(1){
-		randombytes(randstr, Grep->ncols * Grep->nrows/8);
-		randomize(Grep, randstr);
+		randombytes(randstr, Grep->nrows * Grep->colsize * 8);
+		import_matrix(Grep, randstr);
 		
 		dual(Grep, Hrep);
 		for (uint32_t i = 0; i < Hrep->nrows; i++)
@@ -83,13 +79,13 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 		3*CODE_N/4, CODE_N, part_perm2);
 	
 	// two random rows (one of them has odd Hamming weight)
-	uint8_t randstr_for_row[Gm->ncols / 8];
+	uint8_t randstr_for_row[Gm->colsize * 8];
 	matrix *random_row = new_matrix(1, Gm->ncols);
 	for (uint32_t i = 0; i < 2; i++){
 		// if i = 0 generate a row with Hamming weight
 		if(i == 0){
 			while(1){
-				randombytes(randstr_for_row, Gm->ncols / 8);
+				randombytes(randstr_for_row, Gm->colsize * 8);
 				// check if odd
 				uint8_t parity = 0;
 				for (uint32_t j = 0; j < Gm->ncols / 8; j++)
@@ -109,7 +105,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 			randombytes(randstr_for_row, Gm->ncols / 8);
 		}
 		
-		randomize(random_row, randstr_for_row);
+		import_matrix(random_row, randstr_for_row);
 		partial_replace(Gm, i, i+1, 0, Gm->ncols, random_row, 0, 0);
 	}
 
@@ -158,13 +154,12 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	col_permute(Hpub, 0, Hpub->nrows, 0, Hpub->ncols, Q);
 	rref(Hpub);
 
-	matrix* non_identity_hpub = new_matrix(Hpub->nrows, Hpub->ncols - Hpub->nrows);
+	matrix* non_identity_hpub = new_matrix_with_pool(Hpub->nrows, Hpub->ncols - Hpub->nrows, pk);
     partial_replace(non_identity_hpub, 0, non_identity_hpub->nrows, 
         0, non_identity_hpub->ncols, 
         Hpub, 0, Hpub->nrows);
 
     export_sk(sk, Q, part_perm1, part_perm2, Hrep);
-    export_pk(pk, non_identity_hpub);
 
 	delete_matrix(Gm);
 	delete_matrix(Hm);

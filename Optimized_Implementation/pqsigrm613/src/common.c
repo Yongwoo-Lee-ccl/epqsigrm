@@ -27,11 +27,13 @@ unsigned char* hash_message(unsigned char *s, const unsigned char *m,
 int hamming_weight(matrix* error){
 
     uint64_t wgt = 0;
-    unsigned char mask = 1;
-    for (int c = 0; c < error->ncols; ++c){
-        wgt += error->elem[0][c] & mask;
+    for (int c = 0; c < error->colsize; ++c){
+		uint64_t block = error->elem[0][c];
+		for (uint32_t i = 0; i < 64; i++)
+		{
+			wgt += (block >> i) & 1ULL;
+		}
     }
-
     return wgt;
 }
 

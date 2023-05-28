@@ -3,6 +3,7 @@
 #ifndef __PARM_H
 #define __PARM_H
 
+// previous parameters
 #define RM_R 6U
 #define RM_M 13U
 
@@ -14,6 +15,21 @@
 #define PARM_P 561U
 
 #define WEIGHT_PUB 1370U    
+// previous parameters
+
+// test parameters
+// #define RM_R 5U
+// #define RM_M 11U
+
+// #define K_REP 2U
+
+// #define CODE_K 1024U
+// #define CODE_N 2048U
+
+// #define PARM_P 128U
+
+// #define WEIGHT_PUB 512U    
+// test parameters
 
 #define HASHSIZEBYTES 64U 
 
