@@ -65,6 +65,7 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
 
     delete_matrix(sign);
     delete_matrix(non_identity_hpub);
+    delete_matrix(sign_tail);
 
     delete_matrix(syndrome_by_hash);
     delete_matrix(syndrome_by_e);

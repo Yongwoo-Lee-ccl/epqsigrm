@@ -2,26 +2,6 @@
 
 #include "matrix.h"
 
-inline uint64_t xor_bits(uint64_t value) {
-    value ^= value >> 32;
-    value ^= value >> 16;
-    value ^= value >> 8;
-    value ^= value >> 4;
-    value ^= value >> 2;
-    value ^= value >> 1;
-    return value & 1ULL;
-}
-
-uint64_t xor256(__m256i *value) {
-    // Split the 256-bit value into 64-bit parts
-    uint64_t parts[4];
-    for (int i = 0; i < 4; ++i) {
-        parts[i] = _mm256_extract_epi64(*value, i);
-    }
-    // XOR all 64-bit parts together
-    return parts[0] ^ parts[1] ^ parts[2] ^ parts[3];
-}
-
 matrix* new_matrix (uint32_t nrows, uint32_t ncols)
 {
     matrix* mat;
@@ -149,6 +129,26 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 
 // assume vector is transposed
 // self is also transposed
+uint64_t xor_bits(uint64_t value) {
+    value ^= value >> 32;
+    value ^= value >> 16;
+    value ^= value >> 8;
+    value ^= value >> 4;
+    value ^= value >> 2;
+    value ^= value >> 1;
+    return value & 1ULL;
+}
+
+uint64_t xor256(__m256i *value) {
+    // Split the 256-bit value into 64-bit parts
+    uint64_t part0 = _mm256_extract_epi64(*value, 0);
+    uint64_t part1 = _mm256_extract_epi64(*value, 1);
+    uint64_t part2 = _mm256_extract_epi64(*value, 2);
+    uint64_t part3 = _mm256_extract_epi64(*value, 3);
+    // XOR all 64-bit parts together
+    return part0 ^ part1 ^ part2 ^ part3;
+}
+
 void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
     for(uint32_t i = 0; i < mat->nrows; i++) {
         uint32_t j;
