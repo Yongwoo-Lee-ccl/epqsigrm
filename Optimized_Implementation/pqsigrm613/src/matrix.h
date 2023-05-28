@@ -20,9 +20,11 @@ typedef struct {
     uint32_t ncols;// number of columns.
     uint32_t colsize; // number of 64-bit int in each row
     uint64_t** elem;// elements.
+    uint8_t made_with_import;
 } matrix;
 
-matrix* new_matrix(uint32_t nrows, uint32_t ncols) ;
+matrix* new_matrix(uint32_t nrows, uint32_t ncols);
+matrix* new_matrix_with_pool (uint32_t nrows, uint32_t ncols, const uint8_t* src);
 void init_zero(matrix *self);
 void delete_matrix(matrix *self) ;
 

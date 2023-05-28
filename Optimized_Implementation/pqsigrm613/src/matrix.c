@@ -12,9 +12,24 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
     mat->elem = (uint64_t**)malloc(nrows * sizeof(uint64_t*));
     for (uint32_t i = 0; i < nrows; i++)
     {
-        mat->elem[i] = (uint64_t*)malloc((mat->colsize) * sizeof(uint64_t));
+        mat->elem[i] = (uint64_t*)calloc(mat->colsize, sizeof(uint64_t));
     }
-    init_zero(mat);
+    mat->made_with_import = 0;
+    return mat;
+}
+
+matrix* new_matrix_with_pool (uint32_t nrows, uint32_t ncols, const uint8_t* pool)
+{
+    matrix* mat;
+    mat = (matrix*) malloc (sizeof (matrix));
+    mat->nrows = nrows; 
+    mat->ncols = ncols;
+    mat->colsize = (ncols + 63)/64;
+    mat->elem = (uint64_t**)malloc(nrows * sizeof(uint64_t*));
+    for (uint32_t i = 0; i < mat->nrows; i++){
+        mat->elem[i] = (uint64_t*)(pool + i * mat->colsize * 8);
+    }
+    mat->made_with_import = 1;
     return mat;
 }
 
@@ -26,9 +41,11 @@ void init_zero(matrix *self){
 }
 
 void delete_matrix(matrix* self)
-{
-    for (uint32_t i = 0; i < self->nrows; i++) {
-        free(self->elem[i]);
+{   
+    if(! self->made_with_import){
+        for (uint32_t i = 0; i < self->nrows; i++) {
+            free(self->elem[i]);
+        }
     }
     free(self->elem);
     free(self);
