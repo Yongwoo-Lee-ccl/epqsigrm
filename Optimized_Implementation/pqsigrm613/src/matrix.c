@@ -18,7 +18,6 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
     return mat;
 }
 
-
 void init_zero(matrix *self){
     for (uint32_t i = 0; i < self->nrows; i++)
     {

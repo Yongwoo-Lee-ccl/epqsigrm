@@ -1,13 +1,6 @@
 #include "api.h"
 #include "common.h"
 
-void print_vec(matrix* vec){
-    for (uint32_t i = 0; i < vec->ncols; i++)
-    {
-        printf("%d", get_element(vec,0,i));
-    }printf("\n");    
-}
-
 void import_pk(const unsigned char *pk, matrix *H_pub){
     import_matrix(H_pub, pk);
 }
