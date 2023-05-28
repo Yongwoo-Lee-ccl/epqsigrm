@@ -1,6 +1,13 @@
 #include "api.h"
 #include "common.h"
 
+void print_vec(matrix* vec){
+    for (uint32_t i = 0; i < vec->ncols; i++)
+    {
+        printf("%d", get_element(vec,0,i));
+    }printf("\n");    
+}
+
 void import_pk(const unsigned char *pk, matrix *H_pub){
     import_matrix(H_pub, pk);
 }
@@ -45,13 +52,13 @@ crypto_sign_open(unsigned char *m, unsigned long long *mlen,
     partial_replace(sign_tail, 0, 1, 0, sign_tail->ncols,
         sign, 0, non_identity_hpub->nrows);
     vec_mat_prod(syndrome_by_e, non_identity_hpub, sign_tail);
+    print_vec(syndrome_by_e);
     // add sign_head
     vec_vec_add(syndrome_by_e, sign);
 
     if(!vec_vec_is_equal(syndrome_by_e, syndrome_by_hash)){
         return VERIF_REJECT;
     }
-    
 
     memcpy(m, m_rx, mlen_rx);
     *mlen = mlen_rx;

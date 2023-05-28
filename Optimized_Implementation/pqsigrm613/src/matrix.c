@@ -18,20 +18,8 @@ uint64_t xor256(__m256i *value) {
     for (int i = 0; i < 4; ++i) {
         parts[i] = _mm256_extract_epi64(*value, i);
     }
-
     // XOR all 64-bit parts together
-    uint64_t xor64 = parts[0] ^ parts[1] ^ parts[2] ^ parts[3];
-
-    // XOR all bits of the resulting 64-bit value
-    xor64 ^= xor64 >> 32;
-    xor64 ^= xor64 >> 16;
-    xor64 ^= xor64 >> 8;
-    xor64 ^= xor64 >> 4;
-    xor64 ^= xor64 >> 2;
-    xor64 ^= xor64 >> 1;
-
-    // Return the least significant bit
-    return xor64 & 1;
+    return parts[0] ^ parts[1] ^ parts[2] ^ parts[3];
 }
 
 matrix* new_matrix (uint32_t nrows, uint32_t ncols)
@@ -162,7 +150,6 @@ void get_pivot(matrix* self, uint16_t* lead, uint16_t* lead_diff){
 // assume vector is transposed
 // self is also transposed
 void vec_mat_prod_64(matrix* self, matrix* mat, matrix* vec){
-
     for(uint32_t i = 0; i < mat->nrows; i++) {
         uint64_t block_sum = 0ULL;
         for (uint32_t j = 0; j < mat->colsize; j++) {
@@ -175,27 +162,35 @@ void vec_mat_prod_64(matrix* self, matrix* mat, matrix* vec){
 
 void vec_mat_prod_avx256(matrix* self, matrix* mat, matrix* vec){
     for(uint32_t i = 0; i < mat->nrows; i++) {
+        uint32_t j;
+        uint64_t *m = mat->elem[i];
+        uint64_t *v = vec->elem[0];
+        __m256i *m256 = (__m256i*)m;
+        __m256i *v256 = (__m256i*)v;
+        
         __m256i block_sum_avx = _mm256_setzero_si256();
-        for (uint32_t j = 0; j < mat->colsize; j += 4) {
-            __m256i mat_elem = _mm256_load_si256((__m256i*) &mat->elem[i][j]);
-            __m256i vec_elem = _mm256_load_si256((__m256i*) &vec->elem[0][j]);
-            block_sum_avx = _mm256_xor_si256(block_sum_avx, _mm256_and_si256(mat_elem, vec_elem));
-        }
-        // Now we need to horizontally XOR all the 64-bit integers in block_sum_avx
-        uint64_t final_result = xor256(&block_sum_avx);
-
-        uint64_t block_sum_64 = 0ULL;
-        for (uint32_t j = (mat->colsize/4)*4; j < mat->colsize; j++) {
-            block_sum_64 ^= mat->elem[i][j] & vec->elem[0][j];
+        for (j = 0; j < self->colsize; j+=4){
+            __m256i s_val = _mm256_loadu_si256(&m256[j/4]);
+            __m256i v_val = _mm256_loadu_si256(&v256[j/4]);
+            __m256i elem_mul = _mm256_and_si256(s_val, v_val);
+            block_sum_avx = _mm256_xor_si256(block_sum_avx, elem_mul);
         }
 
-        final_result ^= xor_bits(block_sum_64);
+        uint64_t block_sum_64 = xor256(&block_sum_avx);
+
+        for (; j < self->colsize; ++j) {
+            block_sum_64 ^= m[j] & v[j];
+        }
+
+        // Now we need to horizontally XOR all the 64-bit integers
+        uint64_t final_result = xor_bits(block_sum_64);
         set_element(self, 0, i, final_result);
     }
 }
 
 void vec_mat_prod(matrix* self, matrix* mat, matrix* vec){
-    vec_mat_prod_64(self, mat, vec);
+    vec_mat_prod_avx256(self, mat, vec);
+    // vec_mat_prod_64(self, mat, vec);
 }
 
 void vec_vec_add(matrix* self, matrix* vec){
@@ -216,7 +211,6 @@ void vec_vec_add(matrix* self, matrix* vec){
         s[j] ^= v[j];
     }
 }
-
 
 uint8_t vec_vec_is_equal(matrix* self, matrix *vec){
      for (uint32_t j = 0; j < self->colsize - 1; j++) {
