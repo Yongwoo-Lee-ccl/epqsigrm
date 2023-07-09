@@ -4,7 +4,7 @@
 #ifndef api_h
 #define api_h
 
-#define CRYPTO_PUBLICKEYBYTES 2100735
+#define CRYPTO_PUBLICKEYBYTES 2129400
 #define CRYPTO_SECRETKEYBYTES (8192*16 + 2048*16 + 2048*16)/8 + (2 * (1+(32-1)/64)*64)/8
 
 #define CRYPTO_BYTES (64+8192+64)/8 

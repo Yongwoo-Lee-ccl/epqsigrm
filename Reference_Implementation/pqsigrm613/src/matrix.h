@@ -18,6 +18,7 @@
 typedef struct {
     uint16_t nrows;// number of rows.
     uint16_t ncols;// number of columns.
+    uint16_t colsize;
     uint8_t** elem;// elements.
 } matrix;
 

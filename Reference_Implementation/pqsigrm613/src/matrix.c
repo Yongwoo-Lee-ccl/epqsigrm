@@ -6,10 +6,12 @@ matrix* new_matrix (uint32_t nrows, uint32_t ncols)
     mat = (matrix*) malloc (sizeof (matrix));
     mat->nrows = nrows; 
     mat->ncols = ncols;
+    // Pad zeros up to colsize * 64 to fit with opt. implementation
+    mat->colsize  = (ncols + 63)/64;
     mat->elem = (uint8_t**)malloc(nrows * sizeof(uint8_t*));
     for (uint32_t i = 0; i < nrows; i++)
     {
-        mat->elem[i] = (uint8_t*)malloc(ncols * sizeof(uint8_t));
+        mat->elem[i] = (uint8_t*)calloc(mat->colsize * 64, sizeof(uint8_t));
     }
     init_zero(mat);
     return mat;
@@ -60,7 +62,7 @@ void copy_matrix(matrix* self, matrix* src){
 void export_matrix(matrix* self, uint8_t* dest){
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
-        for (uint32_t j = 0; j < self->ncols; j+=8){
+        for (uint32_t j = 0; j < self->colsize * 64; j += 8){
             uint8_t byte = 0;
             for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
             {
@@ -74,7 +76,7 @@ void export_matrix(matrix* self, uint8_t* dest){
 void import_matrix(matrix* self, const uint8_t* src){
     uint32_t byte_index = 0;
     for (uint32_t i = 0; i < self->nrows; i++){
-        for (uint32_t j = 0; j < self->ncols; j+=8){
+        for (uint32_t j = 0; j < self->colsize * 64; j+=8){
             uint8_t byte = src[byte_index++];
             for (uint32_t k = 0; (k < 8) && (j+k < self->ncols); k++)
             {
