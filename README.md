@@ -12,6 +12,7 @@ E-mail address: <jsno@snu.ac.kr>
 # SOFTWARE REQUIREMENTS
 
 The source requires ANSI C compiler, and OpenSSL library for C.
+AVX2 support for optimized implementation.
 
 # COMPILE
 This source can be compiled with gcc
