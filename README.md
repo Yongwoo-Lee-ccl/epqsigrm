@@ -17,4 +17,12 @@ The source requires ANSI C compiler, and OpenSSL library for C.
 This source can be compiled with gcc
 Put your own main file in directory pqsigrm**	
 
-	$ make
+**For KAT**
+```
+$ make sign
+```
+
+**For runtime**
+```
+$ make runtime
+```
