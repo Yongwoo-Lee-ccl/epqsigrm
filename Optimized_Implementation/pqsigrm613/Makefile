@@ -1,7 +1,7 @@
 CC = gcc
 
 LDFLAGS =  -L/usr/local/lib
-CFLAGS = -I/usr/local/include -Wall -Werror -Wunused-variable -Wunused-function -mavx2
+CFLAGS = -I/usr/local/include -Wunused-variable -Wunused-function -mavx2
 LIBFLAGS = -lcrypto -lssl -lm
 CFILES := $(shell find src -name '*.c' | sed -e 's/\.c/\.o/')
 
@@ -10,7 +10,7 @@ OBJS = ${CFILES}
 ifeq ($(DEBUG), 1)
     DBG_FLAGS = -g -O0 -DDEBUG
 else
-    DBG_FLAGS = -O2 -DNDEBUG -Wall -Werror -Wunused-variable -Wunused-function
+    DBG_FLAGS = -O2 -DNDEBUG -Wunused-variable -Wunused-function
 endif
 
 

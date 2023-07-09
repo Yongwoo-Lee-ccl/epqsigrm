@@ -1,7 +1,6 @@
 *.[oa]
 *~
 _main_*
-PQCgenKAT_sign.c
 *.out
 *.rsp
 *.req

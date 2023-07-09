@@ -155,6 +155,7 @@ crypto_sign_keypair(unsigned char *pk, unsigned char *sk){
 	rref(Hpub);
 
 	matrix* non_identity_hpub = new_matrix_with_pool(Hpub->nrows, Hpub->ncols - Hpub->nrows, pk);
+	init_zero(non_identity_hpub);
     partial_replace(non_identity_hpub, 0, non_identity_hpub->nrows, 
         0, non_identity_hpub->ncols, 
         Hpub, 0, Hpub->nrows);
